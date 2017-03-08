@@ -17,6 +17,7 @@ dkiDir=${subj}/DKI
 roiDir=${subj}/ROI
 segDir=${subj}/segmentation
 bedpostDir=${subj}/DTI.bedpostX
+side_s=$2
 
 if [ $2 == 'lh' ]
 then
@@ -43,18 +44,18 @@ if [ ! -e ${segDir}/${side}/fdt_paths.nii.gz ]
 then
     rm -rf ${segDir}/${side} 
     mkdir -p ${segDir}/${side}
-    echo ${roiDir}/lh_LPFC.nii.gz > ${segDir}/${side}/targets.txt
-    echo ${roiDir}/lh_LTC.nii.gz >> ${segDir}/${side}/targets.txt
-    echo ${roiDir}/lh_MPFC.nii.gz >> ${segDir}/${side}/targets.txt
-    echo ${roiDir}/lh_MTC.nii.gz >> ${segDir}/${side}/targets.txt
-    echo ${roiDir}/lh_OCC.nii.gz >> ${segDir}/${side}/targets.txt
-    echo ${roiDir}/lh_OFC.nii.gz >> ${segDir}/${side}/targets.txt
-    echo ${roiDir}/lh_PC.nii.gz >> ${segDir}/${side}/targets.txt
-    echo ${roiDir}/lh_SMC.nii.gz >> ${segDir}/${side}/targets.txt
+    echo ${roiDir}/${side_s}_LPFC.nii.gz > ${segDir}/${side}/targets.txt
+    echo ${roiDir}/${side_s}_LTC.nii.gz >> ${segDir}/${side}/targets.txt
+    echo ${roiDir}/${side_s}_MPFC.nii.gz >> ${segDir}/${side}/targets.txt
+    echo ${roiDir}/${side_s}_MTC.nii.gz >> ${segDir}/${side}/targets.txt
+    echo ${roiDir}/${side_s}_OCC.nii.gz >> ${segDir}/${side}/targets.txt
+    echo ${roiDir}/${side_s}_OFC.nii.gz >> ${segDir}/${side}/targets.txt
+    echo ${roiDir}/${side_s}_PC.nii.gz >> ${segDir}/${side}/targets.txt
+    echo ${roiDir}/${side_s}_SMC.nii.gz >> ${segDir}/${side}/targets.txt
 
     probtrackx \
         --mode=seedmask \
-        -x ${roiDir}/lh_thalamus.nii.gz \
+        -x ${roiDir}/${side_s}_thalamus.nii.gz \
         -l \
         -c 0.2 \
         -s 2000 \
