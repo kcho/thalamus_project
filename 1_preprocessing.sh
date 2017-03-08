@@ -2,13 +2,13 @@
 for subj in $@
 do
     # edit here for different folder structure
-    fsDir=${i}/FREESURFER
-    regDir=${i}/registration
-    dtiDir=${i}/DTI
-    dkiDir=${i}/DKI
-    roiDir=${i}/ROI
-    segDir=${i}/segmentation
-    bedpostDir=${i}/DTI.bedpostX
+    fsDir=${subj}/FREESURFER
+    regDir=${subj}/registration
+    dtiDir=${subj}/DTI
+    dkiDir=${subj}/DKI
+    roiDir=${subj}/ROI
+    segDir=${subj}/segmentation
+    bedpostDisubj=${subj}/DTI.bedpostX
 
     # convert the Freesurfer output : brain.mgz --> brain.nii.gz 
     if [ ! -e ${fsDir}/mri/brain.nii.gz ]
@@ -17,7 +17,6 @@ do
             ${fsDir}/mri/brain.mgz \
             ${fsDir}/mri/brain.nii.gz
     fi
-
 
     # Registration
     if [ ! -d ${regDir} ]
@@ -66,9 +65,11 @@ do
 
     if [ ! -e ${roiDir}/rh_OCC.nii.gz ]
     then
-        python roiExtraction.py -S ${subj}
+        python roiExtraction.py \
+            -s ${subj} \
+            -r `basename ${roiDir}` \
+            -f `basename ${fsDir}`
     else
         echo ${subj} 'ROI extraction done'
     fi
-
 done
