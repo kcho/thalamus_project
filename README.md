@@ -10,7 +10,9 @@
   - DTI --> DKI [to be done]
 - ROI extraction using `roiExtraction.py`
 
-`bash 1_preprocessing.sh /home/kangik/subj01`
+```sh
+bash 1_preprocessing.sh /home/kangik/subj01
+```
 
 
 ## 2_segmentation
@@ -18,7 +20,18 @@
 - Finding the subregions (find_the_biggest function from fsl)
 - Thresholding connectivity maps (fslmaths -thrP)
 
-`bash 2_segmentation.sh /home/kangik/subj01`
+```sh
+bash 2_segmentation.sh /home/kangik/subj01
+```
+
+## 3_segments_to_dki.py*
+- registers Freesurfer spaced connectivity maps (seeds_in_*) to DKI space
+
+```sh
+python 3_segments_to_dki.py -s ../*
+```
+
+ 
 
 ## For parallel processing
 
