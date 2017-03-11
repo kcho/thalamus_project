@@ -35,12 +35,17 @@ def roiExtraction(subject, roiDir, fsDir):
 
     for roiName, roiNums in cortexNumDict.iteritems():
         for side in 'lh', 'rh':
+            if side == 'lh':
+                newRoiNum = ' '.join([str(x) for x in roiNums])
+            else:
+                newRoiNum = ' '.join(['2'+str(x)[1:] for x in roiNums])
+
             command = 'mri_binarize --i {subjDir}/{fsDir}/mri/aparc+aseg.mgz \
                             --match {numbers} \
                             --o {subjDir}/{roiDir}/{side}_{cortex}.nii.gz'.format(
                                     subjDir=subject,
                                     fsDir=fsDir,
-                                    numbers=' '.join([str(x) for x in roiNums]),
+                                    numbers=newRoiNum,
                                     roiDir=roiDir,
                                     side=side,
                                     cortex=roiName)
