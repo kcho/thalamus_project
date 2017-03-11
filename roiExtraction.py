@@ -35,31 +35,21 @@ def roiExtraction(subject, roiDir, fsDir):
 
     for roiName, roiNums in cortexNumDict.iteritems():
         for side in 'lh', 'rh':
+            if side == 'lh':
+                newRoiNum = ' '.join([str(x) for x in roiNums])
+            else:
+                newRoiNum = ' '.join(['2'+str(x)[1:] for x in roiNums])
+
             command = 'mri_binarize --i {subjDir}/{fsDir}/mri/aparc+aseg.mgz \
                             --match {numbers} \
                             --o {subjDir}/{roiDir}/{side}_{cortex}.nii.gz'.format(
                                     subjDir=subject,
                                     fsDir=fsDir,
-                                    numbers=' '.join([str(x) for x in roiNums]),
+                                    numbers=newRoiNum,
                                     roiDir=roiDir,
                                     side=side,
                                     cortex=roiName)
             os.system(command)
-
-                
-
-
-
-
-    os.system('mri_binarize --i {0}/FREESURFER/mri/aparc+aseg.mgz\
-        --match  \
-        --o {0}/ROI/lh_OCC.nii.gz'.format(subject))
-
-
-    os.system('mri_binarize --i {0}/FREESURFER/mri/aparc+aseg.mgz\
-        --match 2021 2013 2011 2005 \
-        --o {0}/ROI/rh_OCC.nii.gz'.format(subject))
-
 
 if __name__=='__main__':
     argparser = argparse.ArgumentParser(prog='roiExtraction',
@@ -109,12 +99,12 @@ to one or the other subgroup(layer)
 #1032    ctx-lh-frontalpole                  100 0   100 0
 #1018    ctx-lh-parsopercularis              220 180 140 0
 
-
 #SMC
 #1024    ctx-lh-precentral                   60  20  220 0
 #1003    ctx-lh-caudalmiddlefrontal          100 25  0   0
 #1022    ctx-lh-postcentral                  220 20  20  0
 #1017    ctx-lh-paracentral                  60  220 60  0
+
 #PC
 #1008    ctx-lh-inferiorparietal             220 60  220 0
 #1031    ctx-lh-supramarginal                80  160 20  0
@@ -122,10 +112,12 @@ to one or the other subgroup(layer)
 #1023    ctx-lh-posteriorcingulate           220 180 220 0
 #1010    ctx-lh-isthmuscingulate             140 20  140 0
 #1029    ctx-lh-superiorparietal             20  180 140 0
+
 #MTC
 #1006    ctx-lh-entorhinal                   220 20  10  0
 #1016    ctx-lh-parahippocampal              20  220 60  0
 #1007    ctx-lh-fusiform                     180 220 140 0
+
 #LTC
 #1034    ctx-lh-transversetemporal           150 150 200 0
 #1030    ctx-lh-superiortemporal             140 220 220 0
@@ -133,6 +125,7 @@ to one or the other subgroup(layer)
 #1009    ctx-lh-inferiortemporal             180 40  120 0
 #1015    ctx-lh-middletemporal               160 100 50  0
 #1033    ctx-lh-temporalpole                 70  70  70  0
+
 #OCC
 #1021    ctx-lh-pericalcarine                120 100 60  0
 #1013    ctx-lh-lingual                      225 140 140 0
