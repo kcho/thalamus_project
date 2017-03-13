@@ -89,8 +89,11 @@ do
 
     fi
 
-    if [ ! -e ${segDir}/${side}/${thr}thrP/*SMC* ]
+    if ls ${segDir}/${side}/${thr}thrP/*SMC* 1> /dev/null 2>&1
     then
+        echo ${subj} segmentation thresholding done
+    else
+        
         for imgs in ${segDir}/${side}/seeds*
         do
             filename=`basename "${imgs}"`
@@ -103,7 +106,5 @@ do
     
         find_the_biggest ${segDir}/${side}/${thr}thrP/*seeds* \
             ${segDir}/${side}/${thr}thrP/${thr}_biggest.nii.gz
-    else
-        echo ${subj} segmentation thresholding done
     fi
 done

@@ -16,7 +16,7 @@ def segments_to_dki(args):
         segDir = join(subject, segLoc)
         for root, dirs, files in os.walk(segDir):
             for f in files:
-                if re.search('^seeds_to', f):
+                if re.search('^[^dki]\S+seeds_to', f):
                     fLoc = join(root, f)
                     raw_seed_imgs.append(fLoc)
 
@@ -24,6 +24,7 @@ def segments_to_dki(args):
     refs = [join(x.split(segLoc)[0], kmeanLoc) for x in raw_seed_imgs]
     mats = [join(x.split(segLoc)[0], regMatLoc) for x in raw_seed_imgs]
 
+    #print out_imgs
     pool = Pool()
     out = pool.map(flirt, zip(raw_seed_imgs, out_imgs, refs, mats))
 
