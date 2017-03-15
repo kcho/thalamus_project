@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import os
-from os import join
+from os.path import join
 import re
 import argparse
 
