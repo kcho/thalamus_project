@@ -1,9 +1,16 @@
 #!/usr/bin/python
 
 import os
-from os.path import join
+from os.path import join, isdir
 import re
 import argparse
+
+def convert_to_ras(imgFrom, imgTo):
+    if not isdir(imgTo):
+        command = 'mri_convert \
+                --out_orientation RAS \
+                {0} {1}'.format(imgFrom, imgTo)
+        os.popen(command).read()
 
 def roiExtraction(subject, roiName, fsName):
     os.environ["FREESURFER_HOME"] = '/usr/local/freesurfer'
@@ -15,9 +22,7 @@ def roiExtraction(subject, roiName, fsName):
     # Change orientation to RAS
     aaLoc = join(fsDir, 'mri/aparc+aseg.mgz')
     oaaLoc = join(fsDir, 'mri/oaparc+aseg.mgz')
-    command = 'mri_convert --out_orientation RAS \
-            {0} {1}'.format(aaLoc, oaaLoc)
-    os.system(command)
+    convert_to_ras(aaLoc, oaaLoc)
 
     #to extract thalamus
     thalamusNumDict={'lh':10, 'rh':49}
@@ -41,7 +46,7 @@ def roiExtraction(subject, roiName, fsName):
                      'MTC':[1006, 1016, 1007],
                      'LTC':[1034, 1030, 1001, 1009, 1015, 1033],
                      'OCC':[1021, 1013, 1011, 1005]}
-    for roiName, roiNums in cortexNumDict.iteritems():
+    for cortex, roiNums in cortexNumDict.iteritems():
         for side in 'lh', 'rh':
             if side == 'lh':
                 newRoiNum = ' '.join([str(x) for x in roiNums])
@@ -55,7 +60,7 @@ def roiExtraction(subject, roiName, fsName):
                                     numbers=newRoiNum,
                                     roiDir=roiDir,
                                     side=side,
-                                    cortex=roiDir)
+                                    cortex=cortex)
             os.system(command)
 
 if __name__=='__main__':
