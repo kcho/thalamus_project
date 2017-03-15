@@ -50,12 +50,12 @@ def roiExtraction(subject, roiName, fsName):
 
             command = 'mri_binarize --i {oaaLoc} \
                             --match {numbers} \
-                            --o roiDir}/{side}_{cortex}.nii.gz'.format(
+                            --o {roiDir}/{side}_{cortex}.nii.gz'.format(
                                     fsDir=fsDir,
                                     numbers=newRoiNum,
                                     roiDir=roiDir,
                                     side=side,
-                                    cortex=roiName)
+                                    cortex=roiDir)
             os.system(command)
 
 if __name__=='__main__':
