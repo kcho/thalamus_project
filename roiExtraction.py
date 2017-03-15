@@ -9,7 +9,7 @@ def roiExtraction(subject, roiName, fsName):
     os.environ["FREESURFER_HOME"] = '/usr/local/freesurfer'
     os.environ["SUBJECTS_DIR"] = '{0}'.format(subject)
 
-    roiLoc = join(subject, roiName)
+    roiDir = join(subject, roiName)
     fsDir = join(subject, fsName)
 
     # Change orientation to RAS
