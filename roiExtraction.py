@@ -1,38 +1,46 @@
 #!/usr/bin/python
 
 import os
+from os import join
 import re
 import argparse
 
-def roiExtraction(subject, roiDir, fsDir):
+def roiExtraction(subject, roiName, fsName):
     os.environ["FREESURFER_HOME"] = '/usr/local/freesurfer'
     os.environ["SUBJECTS_DIR"] = '{0}'.format(subject)
 
+    roiLoc = join(subject, roiName)
+    fsDir = join(subject, fsName)
+
+    # Change orientation to RAS
+    aaLoc = join(fsDir, 'mri/aparc+aseg.mgz')
+    oaaLoc = join(fsDir, 'mri/oaparc+aseg.mgz')
+    command = 'mri_convert --out_orientation RAS \
+            {0} {1}'.format(aaLoc, oaaLoc)
+    os.system(command)
+
     #to extract thalamus
     thalamusNumDict={'lh':10, 'rh':49}
-
     for side in 'lh','rh':
-        command = 'mri_binarize --i {subjDir}/{fsDir}/mri/aseg.mgz \
+        command = 'mri_binarize --i {oaaLoc} \
                 --match {thalamusNum} \
-                --o {subjDir}/{roiDir}/{side}_thalamus.nii.gz'.format(
-                    subjDir=subject,
+                --o {roiDir}/{side}_thalamus.nii.gz'.format(
+                    oaaLoc = oaaLoc,
                     fsDir=fsDir,
                     thalamusNum=thalamusNumDict[side],
                     roiDir=roiDir,
                     side=side)
         os.system(command)
 
-    cortexNumDict = { 
-        'OFC':[1019, 1014, 1012],
-        'MPFC':[1002, 1026, 1028],
-        'LPFC':[1020, 1027, 1032, 1018],
-        'SMC':[1024, 1003, 1022, 1017],
-        'PC':[1008, 1031, 1025, 1023, 1010, 1029],
-        'MTC':[1006, 1016, 1007],
-        'LTC':[1034, 1030, 1001, 1009, 1015, 1033],
-        'OCC':[1021, 1013, 1011, 1005]
-        }
-
+    # to extract cortex
+    cortexNumDict = {'OFC':[1019, 1014, 1012],
+                     'MPFC':[1002, 1026, 1028],
+                     'LPFC':[1020, 1027, 1032, 1018],
+                     'SMC':[1024, 1003, 1022, 1017],
+                     'PC':[1008, 1031, 1025, 1023, 1010, 1029],
+                     'MTC':[1006, 1016, 1007],
+                     'LTC':[1034, 1030, 1001, 1009, 1015, 1033],
+                     'OCC':[1021, 1013, 1011, 1005]}
     for roiName, roiNums in cortexNumDict.iteritems():
         for side in 'lh', 'rh':
             if side == 'lh':
@@ -40,10 +48,9 @@ def roiExtraction(subject, roiDir, fsDir):
             else:
                 newRoiNum = ' '.join(['2'+str(x)[1:] for x in roiNums])
 
-            command = 'mri_binarize --i {subjDir}/{fsDir}/mri/aparc+aseg.mgz \
+            command = 'mri_binarize --i {oaaLoc} \
                             --match {numbers} \
-                            --o {subjDir}/{roiDir}/{side}_{cortex}.nii.gz'.format(
-                                    subjDir=subject,
+                            --o roiDir}/{side}_{cortex}.nii.gz'.format(
                                     fsDir=fsDir,
                                     numbers=newRoiNum,
                                     roiDir=roiDir,
@@ -66,13 +73,13 @@ to one or the other subgroup(layer)
                             help='''
                             specify location of the subject folder
                             ''')
-    argparser.add_argument("--roiDir","-r",
+    argparser.add_argument("--roiName","-r",
                            nargs=1,
                            type=str,
                             help='''
                             specify ROI output folder name
                             ''')
-    argparser.add_argument("--fsDir","-f",
+    argparser.add_argument("--fsName","-f",
                            nargs=1,
                            type=str,
                            help='''
@@ -81,7 +88,7 @@ to one or the other subgroup(layer)
     args = argparser.parse_args()
 
     print args
-    roiExtraction(args.subject[0], args.roiDir[0], args.fsDir[0])
+    roiExtraction(args.subject[0], args.roiName[0], args.fsName[0])
 
 #OFC
 #1019    ctx-lh-parsorbitalis                20  100 50  0
