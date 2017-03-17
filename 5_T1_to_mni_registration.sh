@@ -9,7 +9,7 @@ do
     targetImgMask=/usr/share/fsl/5.0/data/standard/MNI152_T1_1mm_brain_mask.nii.gz
 
     #make T1_brain.nii.gz
-    if [ ! -e ${rawT1_mask}ha ]
+    if [ ! -e ${rawT1_mask} ]
     then
         mri_convert --out_orientation RAS \
             ${rawT1_mask_mgz} \
@@ -28,7 +28,7 @@ do
             -omat ${flirtMat}
     fi
 
-    if [ ! -e ${i}/registration/T1_to_MNI_fnirt_coeff.nii.gzja ]
+    if [ ! -e ${i}/registration/T1_to_MNI_fnirt_coeff.nii.gz ]
     then
         fnirt \
             --in=${sourceImg} \
@@ -42,7 +42,7 @@ do
 
     for side in left right
     do
-        if [ ! -e ${i}/segmentation/${side}/biggest_mni.nii.gzha ]
+        if [ ! -e ${i}/segmentation/${side}/biggest_mni.nii.gz ]
         then
         applywarp \
             --ref=${targetImg} \
