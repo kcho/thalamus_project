@@ -19,7 +19,7 @@ do
 
     flirtMat=${i}/registration/T1_to_MNI.mat
     #flirt & fnirt
-    if [ ! -e ${flirtMat}ja ]
+    if [ ! -e ${flirtMat} ]
     then
         flirt -in ${sourceImg} \
             -ref ${targetImg} \
