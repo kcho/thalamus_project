@@ -52,6 +52,17 @@ do
             --interp=nn
 
         fi
+
+        for connectivity_thrp90 in ${i}/segmentation/${side}/90thrP/90_seeds_to*
+        do
+            f_basename=`basename ${connectivity_thrp90}`
+            applywarp \
+                --ref=${targetImg} \
+                --in=${connectivity_thrp90} \
+                --warp=${i}/registration/T1_to_MNI_fnirt_coeff \
+                --out=${i}/segmentation/${side}/90thrP/mni_${f_basename} \
+                --interp=nn
+        done
     done
 done
 
