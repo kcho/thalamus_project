@@ -15,7 +15,7 @@ basenm=`basename $logfile .ecclog`;
 
 nums=`grep -n 'Final' $logfile | sed 's/:.*//'`; 
 
-touch ${dir}/grot_ts.txt
+#touch ${dir}/grot_ts.txt
 touch ${dir}/grot.mat
 
 firsttime=yes;
@@ -24,16 +24,26 @@ for n in $nums ; do
     echo "Timepoint $m"
     n1=`echo $n + 1 | bc` ; 
     n2=`echo $n + 5 | bc` ;
-    sed -n  "$n1,${n2}p" $logfile > ${dir}/grot.mat ; 
-    if [ $firsttime = yes ] ; then firsttime=no; cp ${dir}/grot.mat ${dir}/grot.refmat ; cp ${dir}/grot.mat ${dir}/grot.oldmat ; fi
+    echo $n1 $n2
+    sed -n  "${n1},${n2}p" $logfile > ${dir}/grot.mat ; 
+
+    if [ $firsttime = yes ] 
+    then 
+        firsttime=no
+        cp ${dir}/grot.mat ${dir}/grot.refmat
+        cp ${dir}/grot.mat ${dir}/grot.oldmat
+    fi
     #absval=`$FSLDIR/bin/rmsdiff grot.mat grot.refmat $basenm`;
     #relval=`$FSLDIR/bin/rmsdiff grot.mat grot.oldmat $basenm`;
     absval=`$FSLDIR/bin/rmsdiff ${dir}/grot.mat ${dir}/grot.refmat ${dir}/${basenm}`;
     relval=`$FSLDIR/bin/rmsdiff ${dir}/grot.mat ${dir}/grot.oldmat ${dir}/${basenm}`;
     cp ${dir}/grot.mat ${dir}/grot.oldmat
     echo $absval $relval >> ${dir}/ec_disp.txt ;
+
     $FSLDIR/bin/avscale --allparams ${dir}/grot.mat ${dir}/${basenm} | grep 'Rotation Angles' | sed 's/.* = //' >> ${dir}/ec_rot.txt ;
+
     $FSLDIR/bin/avscale --allparams ${dir}/grot.mat ${dir}/${basenm} | grep 'Translations' | sed 's/.* = //' >> ${dir}/ec_trans.txt ;
+
     m=`echo $m + 1 | bc`;
 done
 
