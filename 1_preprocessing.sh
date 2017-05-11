@@ -8,7 +8,12 @@ do
     dkiDir=${subj}/DKI
     roiDir=${subj}/ROI
     segDir=${subj}/segmentation
-    bedpostDisubj=${subj}/DTI.bedpostX
+    bedpostDir=${subj}/DTI.bedpostX
+
+    if [ ! -d ${bedpostDir} ]
+    then
+        bedpostx ${dtiDir}
+    fi
 
     # convert the Freesurfer output : brain.mgz --> brain.nii.gz 
     if [ ! -e ${fsDir}/mri/brain.nii.gz ]
@@ -29,7 +34,7 @@ do
     then
         flirt \
             -in ${fsDir}/mri/brain.nii.gz \
-            -ref ${dtiDir}/b0_brain.nii.gz \
+            -ref ${dtiDir}/nodif_brain.nii.gz \
             -out ${regDir}/FREESURFERT1toNodif \
             -omat ${regDir}/FREESURFERT1toNodif.mat \
             -bins 256 \
@@ -45,7 +50,7 @@ do
     then
         flirt \
             -in ${fsDir}/mri/brain.nii.gz \
-            -ref ${dkiDir}/b0_brain.nii.gz \
+            -ref ${dkiDir}/nodif_brain.nii.gz \
             -out ${regDir}/FREESURFERT1toDKINodif \
             -omat ${regDir}/FREESURFERT1toDKINodif.mat \
             -bins 256 \
@@ -56,6 +61,36 @@ do
             -dof 6  -interp trilinear
     fi
 
+    # FREESURFER output T1 --> MNI 1mm
+    if [ ! -e ${regDir}/FREESURFERT1toMNI.mat ]
+    then
+        flirt \
+            -in ${fsDir}/mri/brain.nii.gz \
+            -ref /usr/share/fsl/5.0/data/standard/MNI152_T1_1mm_brain.nii.gz \
+            -out ${regDir}/FREESURFERT1toMNI \
+            -omat ${regDir}/FREESURFERT1toMNI.mat \
+            -bins 256 \
+            -cost mutualinfo \
+            -searchrx -180 180 \
+            -searchry -180 180 \
+            -searchrz -180 180 \
+            -dof 6  -interp trilinear
+    fi
+
+    # DTI --> FREESURFER output T1 --> MNI 1mm
+
+    if [ ! -e ${regDir}/nodifToFreesurfer.mat ]
+    then
+        convert_xfm \
+            -omat ${regDir}/nodifToFreesurfer.mat \
+            -inverse ${regDir}/FREESURFERT1toNodif.mat
+    fi
+
+    if [ ! -e ${regDir}/nodifToMNI.mat ]
+    then
+        convert_xfm -omat ${regDir}/nodifToMNI.mat \
+            -concat ${regDir}/FREESURFERT1toMNI.mat ${regDir}/nodifToFreesurfer.mat
+    fi
 
     # ROI extraction
     if [ ! -d ${roiDir} ] 
