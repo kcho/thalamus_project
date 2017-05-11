@@ -42,25 +42,26 @@ else
 fi
 
 # Freesurfer ROI registration 
-fsThalROI=${regDir}/${side_s}_thalamus.nii.gz 
-dtiThalROI=${regDir}/${side_s}_thalamus_DTI.nii.gz 
+fsThalROI=${roiDir}/${side_s}_thalamus.nii.gz 
+mniThalROI=${side_s}_thalamus_HOSC_60.nii.gz
+dtiThalROI=${roiDir}/${side_s}_thalamus_DTI.nii.gz 
 
-if [ ! -e ${dtiThalROI} ]
-then 
-    flirt \
-        -in ${fsThalROI} \
-        -ref ${bedpostDir}/nodif_brain_mask.nii.gz \
-        -applyxfm -init ${regDir}/FREESURFERT1toNodif.mat \
-        -interp nearestneighbour \
-        -out ${dtiThalROI}
-fi
+#if [ ! -e ${dtiThalROI} ]
+#then 
+    #flirt \
+        #-in ${fsThalROI} \
+        #-ref ${bedpostDir}/nodif_brain_mask.nii.gz \
+        #-applyxfm -init ${regDir}/FREESURFERT1toNodif.mat \
+        #-interp nearestneighbour \
+        #-out ${dtiThalROI}
+#fi
 
 if [ ! -e ${tractDir}/${side}/fdt_paths.nii.gz ]
 then
     rm -rf ${tractDir}/${side} 
     mkdir -p ${tractDir}/${side}
     probtrackx2 \
-        -x ${dtiThalROI} \
+        -x ${mniThalROI} \
         -l \
         --onewaycondition \
         --omatrix2 \
@@ -69,6 +70,7 @@ then
         -S 2000 \
         --steplength=0.5 \
         -P 5000 \
+        --xfm=${regDir}/mniToNodif.mat \
         --fibthresh=0.01 \
         --distthresh=0.0 \
         --sampvox=0.0 \
