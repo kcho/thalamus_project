@@ -13,19 +13,9 @@ def voxel_probtrackx(probtrackx_dir):
     fdt_mat2 = join(probtrackx_dir, 'fdt_matrix2.dot')
     fdt_paths = join(probtrackx_dir, 'fdt_paths.nii.gz')
     coords_file = join(probtrackx_dir, 'tract_space_coords_for_fdt_matrix2')
-    x = np.loadtxt(fdt_mat2)
+    x = np.loadtxt(fdt_mat2, dtype='int')
 
-    #print(x.shape[0],x.shape[1])
-    #sparse_matrix = csr_matrix(x, shape(2, x.shape)#.todense()
-    #sparse_matrix = coo_matrix((x, (x.shape[0],x.shape[1])))
-    #print(x[:,0].toarray().shape)
-    x_cord = x[:,0].astype('int')
-    y_cord = x[:,1].astype('int')
-
-    
-    #sparse_matrix = csr_matrix((x[:,2], (x_cord, y_cord)))#, shape=(x[:,0].max(), x[:,1].max())).toarray()
-    #M = sparse_matrix.todense()
-    #M = full(spconvert(x))
+    M = full(spconvert(x))
 
     #print(M.shape)
 
@@ -33,21 +23,34 @@ def voxel_probtrackx(probtrackx_dir):
     f = nb.load(fdt_paths)
     data = f.get_data()
 
-    coord = np.loadtxt(coords_file)
+    # it starts from zero
+    # need to add one
+    # change below
+    # Thursday, May 11, 2017
+    coord = np.loadtxt(coords_file, dtype='int')
     print(coord.shape)
     #mask4D = np.zeros((mask.shape[0], mask.shape[1], mask.shape[2], M.shape[0]-1))
     #print(mask4D.shape)
 
-    #ind = sub2ind(size(mask), coord(:,1), coord(:,2), coord(:,3));
-    ind = np.unravel_index(data.shape, dims=(coord[:,0].astype('int'), coord[:,1].astype('int'), coord[:,2].astype('int')))
+    # need to vectorize
+    #np.ravel_multi_index([2, 2, 2], dims=(d.shape), order='F')
+    ind = np.ravel_multi_index((coord[:,0], coord[:,1], coord[:,2]), 
+                               dims=(data.shape), 
+                               order='F')
     print(ind.shape)
 
-    #for i in M.shape[0]:
-        #mask = np.zeros_like(data)
-        #mask[ind] = M[i,:]
+    mask = np.zeros_like(data)
+    mask4D = np.tile(np.zeros_like(data)[:,:,:,np.newaxis], 
+                     M.shape[0])
+
+    for i in M.shape[0]:
         #print(i)
-        #img = nb.Nifti1Image(mask, f.affine())
-        #img.to_filename(join(probtrackx_dir, i+'.nii.gz'))
+        #mask[ind] = M[i,:]
+        mask[ind] = 
+        mask4D[:,:,:,i] = M[i,:]
+
+    img = nb.Nifti1Image(mask4D, f.affine())
+    img.to_filename(join(probtrackx_dir, i+'.nii.gz'))
 
 
 def full(DATA):
@@ -70,8 +73,6 @@ def spconvert(DATA):
         index = tuple(row[:-1] - 1)
         M.itemset(index, row[-1])
     return M
-
-
 
 if __name__=='__main__':
     voxel_probtrackx(sys.argv[1])
