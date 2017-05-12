@@ -1,3 +1,5 @@
+# Friday, May 12, 2017
+
 import nibabel as nb
 import numpy as np
 import sys
@@ -6,6 +8,8 @@ from scipy.sparse import csr_matrix, coo_matrix
 
 def voxel_probtrackx(probtrackx_dir):
     '''
+    Converts ROI to whole brain probabilistic tractography output
+    to voxelwise connectivity profile 4D nifti map
     https://www.jiscmail.ac.uk/cgi-bin/webadmin?A2=fsl;d3f65c4e.1405
     '''
     fdt_mat2 = join(probtrackx_dir, 'fdt_matrix2.dot')
@@ -13,40 +17,32 @@ def voxel_probtrackx(probtrackx_dir):
     coords_file = join(probtrackx_dir, 'tract_space_coords_for_fdt_matrix2')
 
     # Load Matrix2
-    print('Loading fdt_matrix2.dot')
     x = np.loadtxt(fdt_mat2, dtype='int')
-    print('\t{0}'.format(x.shape))
-
-    print('Converting fdt_matrix2 to full matrix')
     M = full(spconvert(x))
-    print('\t{0}'.format(M.shape))
 
-    # Load coordinate information to save results
-    print('Loading fdt_paths.nii.gz')
+    # Load 'fdt_path.nii.gz'
     f = nb.load(fdt_paths)
     data = f.get_data()
-    print('\t{0}'.format(data.shape))
 
-    print('Loading tract_space_coords')
+    # Load coordinate information to save results
     coord = np.loadtxt(coords_file, dtype='int')
-    print('\t{0}'.format(coord.shape))
-
-    print('Ravel x,y,z coordinates into index'.format(coords_file))
     ind = np.ravel_multi_index((coord[:,0], coord[:,1], coord[:,2]), 
                                dims=(data.shape), 
                                order='F')
-    print('\t{0}'.format(ind.shape))
-
     
+    # ravel mask map
     mask_ravel = np.zeros_like(data).ravel()
     mask4D = np.tile(np.zeros_like(data)[:,:,:,np.newaxis], 
                      M.shape[0])
 
+    # M.shape[0] : number of voxels used in the tractography
     for i in range(M.shape[0]):
-        print(i)
         mask_ravel[ind] = M[i,:]
-        mask4D[:,:,:,i] = mask_ravel.reshape(data.shape)
+        # edit each volume of the 4D array 
+        # with the maps amended as M[i,:] at the coordinates
+        mask4D[:,:,:,i] = mask_ravel.reshape(data.shape) 
 
+    # Save the results
     img = nb.Nifti1Image(mask4D, f.affine)
     img.to_filename(join(probtrackx_dir, 'fdt_matrix2_recontructed.nii.gz'))
 
