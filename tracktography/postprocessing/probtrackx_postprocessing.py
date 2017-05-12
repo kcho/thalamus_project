@@ -47,7 +47,7 @@ def voxel_probtrackx(probtrackx_dir):
         mask_ravel[ind] = M[i,:]
         mask4D[:,:,:,i] = mask_ravel.reshape(data.shape)
 
-    img = nb.Nifti1Image(mask4D, f.affine())
+    img = nb.Nifti1Image(mask4D, f.affine)
     img.to_filename(join(probtrackx_dir, 'fdt_matrix2_recontructed.nii.gz'))
 
 
