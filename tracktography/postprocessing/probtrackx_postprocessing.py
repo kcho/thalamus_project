@@ -1,56 +1,54 @@
 import nibabel as nb
 import numpy as np
 import sys
-from os.path import join
+from os.path import join, basename
 from scipy.sparse import csr_matrix, coo_matrix
 
 def voxel_probtrackx(probtrackx_dir):
     '''
     https://www.jiscmail.ac.uk/cgi-bin/webadmin?A2=fsl;d3f65c4e.1405
     '''
-
-    # load Matrix2
     fdt_mat2 = join(probtrackx_dir, 'fdt_matrix2.dot')
     fdt_paths = join(probtrackx_dir, 'fdt_paths.nii.gz')
     coords_file = join(probtrackx_dir, 'tract_space_coords_for_fdt_matrix2')
+
+    # Load Matrix2
+    print('Loading fdt_matrix2.dot')
     x = np.loadtxt(fdt_mat2, dtype='int')
+    print('\t{0}'.format(x.shape))
 
+    print('Converting fdt_matrix2 to full matrix')
     M = full(spconvert(x))
-
-    #print(M.shape)
+    print('\t{0}'.format(M.shape))
 
     # Load coordinate information to save results
+    print('Loading fdt_paths.nii.gz')
     f = nb.load(fdt_paths)
     data = f.get_data()
+    print('\t{0}'.format(data.shape))
 
-    # it starts from zero
-    # need to add one
-    # change below
-    # Thursday, May 11, 2017
+    print('Loading tract_space_coords')
     coord = np.loadtxt(coords_file, dtype='int')
-    print(coord.shape)
-    #mask4D = np.zeros((mask.shape[0], mask.shape[1], mask.shape[2], M.shape[0]-1))
-    #print(mask4D.shape)
+    print('\t{0}'.format(coord.shape))
 
-    # need to vectorize
-    #np.ravel_multi_index([2, 2, 2], dims=(d.shape), order='F')
+    print('Ravel x,y,z coordinates into index'.format(coords_file))
     ind = np.ravel_multi_index((coord[:,0], coord[:,1], coord[:,2]), 
                                dims=(data.shape), 
                                order='F')
-    print(ind.shape)
+    print('\t{0}'.format(ind.shape))
 
-    mask = np.zeros_like(data)
+    
+    mask_ravel = np.zeros_like(data).ravel()
     mask4D = np.tile(np.zeros_like(data)[:,:,:,np.newaxis], 
                      M.shape[0])
 
-    for i in M.shape[0]:
-        #print(i)
-        #mask[ind] = M[i,:]
-        mask[ind] = 
-        mask4D[:,:,:,i] = M[i,:]
+    for i in range(M.shape[0]):
+        print(i)
+        mask_ravel[ind] = M[i,:]
+        mask4D[:,:,:,i] = mask_ravel.reshape(mask.shape)
 
     img = nb.Nifti1Image(mask4D, f.affine())
-    img.to_filename(join(probtrackx_dir, i+'.nii.gz'))
+    img.to_filename(join(probtrackx_dir, 'fdt_matrix2_recontructed.nii.gz'))
 
 
 def full(DATA):
