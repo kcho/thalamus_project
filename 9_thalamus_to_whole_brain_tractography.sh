@@ -84,7 +84,7 @@ then
         -S 2000 \
         --steplength=0.5 \
         -P 5000 \
-        --xfm=${regDir}/mniToNodif.mat \
+        --xfm=${regDir}/MNIToNodif.mat \
         --fibthresh=0.01 \
         --distthresh=0.0 \
         --sampvox=0.0 \
