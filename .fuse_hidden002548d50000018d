@@ -69,6 +69,8 @@ then
 fi
 
 mniThalROI=${side_s}_thalamus_HOSC_60.nii.gz
+echo ${mniThalROI}
+ls ${mniThalROI}
 
 if [ ! -e ${tractDir}/${side}/fdt_paths.nii.gz ]
 then
