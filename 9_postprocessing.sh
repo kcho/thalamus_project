@@ -23,13 +23,15 @@ bedpostDir=${subj}/DTI.bedpostX
 
 for side in left right
 do
-    reconImg=${tractDir}/${side}/fdt_matrix2_reconstructed.nii.gz
-    reconImgMNI=${tractDir}/${side}/fdt_matrix2_reconstructed_MNI.nii.gz
-    reconImgMNI_ds=${tractDir}/${side}/fdt_matrix2_reconstructed_MNI_ds.nii.gz
+    reconImg=${tractDirMNI}/${side}/fdt_matrix2_reconstructed.nii.gz
+    reconImgMNI=${tractDirMNI}/${side}/fdt_matrix2_reconstructed_MNI.nii.gz
+    reconImgMNI_ds=${tractDirMNI}/${side}/fdt_matrix2_reconstructed_MNI_ds.nii.gz
 
     # probtracks postprocessing
     if [ ! -e ${reconImg} ]
     then 
+        ls ${reconImg}
+        echo 'ha'
         python tracktography/postprocessing/probtrackx_postprocessing.py \
             ${tractDirMNI}/${side} \
             ${dtiDir}/b0.nii.gz
@@ -38,6 +40,7 @@ do
     # do it in melodic
     if [ ! -e ${reconImgMNI} ]
     then
+        echo 'Registration'
         flirt \
             -in ${reconImg} \
             -ref ${FSLDIR}/data/standard/MNI152_T1_2mm.nii.gz \
@@ -47,6 +50,7 @@ do
 
     if [ ! -e ${reconImgMNI_ds} ]
     then
+        echo 'Downsampling'
         flirt \
             -in ${reconImgMNI} \
             -ref ${reconImgMNI} \
