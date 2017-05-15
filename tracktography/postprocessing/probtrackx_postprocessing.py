@@ -44,7 +44,7 @@ def voxel_probtrackx(probtrackx_dir, fdt_paths):
 
     # Save the results
     img = nb.Nifti1Image(mask4D, f.affine)
-    img.to_filename(join(probtrackx_dir, 'fdt_matrix2_recontructed.nii.gz'))
+    img.to_filename(join(probtrackx_dir, 'fdt_matrix2_reconstructed.nii.gz'))
 
 
 def full(DATA):

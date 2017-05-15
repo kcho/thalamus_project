@@ -36,21 +36,21 @@ do
     fi
 
     # do it in melodic
-    #if [ ! -e ${reconImgMNI} ]
-    #then
-        #flirt \
-            #-in ${reconImg} \
-            #-ref ${FSLDIR}/data/standard/MNI152_T1_2mm.nii.gz \
-            #-applyxfm -init ${regDir}/nodifToMNI.mat \
-            #-out ${reconImgMNI}
-    #fi
+    if [ ! -e ${reconImgMNI} ]
+    then
+        flirt \
+            -in ${reconImg} \
+            -ref ${FSLDIR}/data/standard/MNI152_T1_2mm.nii.gz \
+            -applyxfm -init ${regDir}/nodifToMNI.mat \
+            -out ${reconImgMNI}
+    fi
 
-    #if [ ! -e ${reconImgMNI_ds} ]
-    #then
-        #flirt \
-            #-in ${reconImgMNI} \
-            #-ref ${reconImgMNI} \
-            #-applyisoxfm 3 \
-            #-out ${reconImgMNI_ds}
-    #fi
+    if [ ! -e ${reconImgMNI_ds} ]
+    then
+        flirt \
+            -in ${reconImgMNI} \
+            -ref ${reconImgMNI} \
+            -applyisoxfm 3 \
+            -out ${reconImgMNI_ds}
+    fi
 done
