@@ -16,6 +16,7 @@ dtiDir=${subj}/DTI
 dkiDir=${subj}/DKI
 roiDir=${subj}/ROI
 tractDir=${subj}/thalamus_tractography
+tractDir_MNI=${subj}/thalamus_tractography_MNI
 segDir=${subj}/segmentation
 bedpostDir=${subj}/DTI.bedpostX
 side_s=$2
@@ -55,22 +56,22 @@ then
         -out ${dtiThalROI}
 fi
 
-#if [ ! -e lh_thalamus_HOSC_60.nii.gz ]
-#then
-    #fslroi ${FSLDIR}/data/atlases/HarvardOxford/HarvardOxford-sub-prob-2mm.nii.gz lh_thalamus_HOSC.nii.gz 3 1
-    #fslmaths lh_thalalmus_HOSC.nii.gz -thr 60 lh_thalamus_HOSC_60.nii.gz
-#fi
+if [ ! -e lh_thalamus_HOSC_60.nii.gz ]
+then
+    fslroi ${FSLDIR}/data/atlases/HarvardOxford/HarvardOxford-sub-prob-2mm.nii.gz lh_thalamus_HOSC.nii.gz 3 1
+    fslmaths lh_thalalmus_HOSC.nii.gz -thr 60 lh_thalamus_HOSC_60.nii.gz
+fi
 
-#if [ ! -e rh_thalamus_HOSC_60.nii.gz ]
-#then
-    #fslroi ${FSLDIR}/data/atlases/HarvardOxford/HarvardOxford-sub-prob-2mm.nii.gz rh_thalamus_HOSC.nii.gz 14 1
-    #fslmaths rh_thalalmus_HOSC.nii.gz -thr 60 rh_thalamus_HOSC_60.nii.gz
-#fi
+if [ ! -e rh_thalamus_HOSC_60.nii.gz ]
+then
+    fslroi ${FSLDIR}/data/atlases/HarvardOxford/HarvardOxford-sub-prob-2mm.nii.gz rh_thalamus_HOSC.nii.gz 14 1
+    fslmaths rh_thalalmus_HOSC.nii.gz -thr 60 rh_thalamus_HOSC_60.nii.gz
+fi
 
-#mniThalROI=${side_s}_thalamus_HOSC_60.nii.gz
+mniThalROI=${side_s}_thalamus_HOSC_60.nii.gz
 
-#if [ ! -e ${tractDir}/${side}/fdt_paths.nii.gz ]
-#then
+if [ ! -e ${tractDir}/${side}/fdt_paths.nii.gz ]
+then
     rm -rf ${tractDir}/${side} 
     mkdir -p ${tractDir}/${side}
     probtrackx2 \
@@ -92,8 +93,35 @@ fi
         -m ${bedpostDir}/nodif_brain_mask \
         --dir=${tractDir}/${side}
     echo ${subj} thalamo-whole brain tractography on the ${side} done
-#else
+else
     echo ${subj} thalamo-whole brain tractography on the ${side} done
-#fi
+fi
 
-        #--xfm=${regDir}/MNItoNodif.mat \
+
+if [ ! -e ${tractDir_MNI}/${side}/fdt_paths.nii.gz ]
+then
+    rm -rf ${tractDir_MNI}/${side} 
+    mkdir -p ${tractDir_MNI}/${side}
+    probtrackx2 \
+        -x ${mniThalROI} \
+        -l \
+        --onewaycondition \
+        --omatrix2 \
+        --target2=${bedpostDir}/nodif_brain_mask.nii.gz \
+        --xfm=${regDir}/MNItoNodif.mat \
+        -c 0.2 \
+        -S 2000 \
+        --steplength=0.5 \
+        -P 5000 \
+        --fibthresh=0.01 \
+        --distthresh=0.0 \
+        --sampvox=0.0 \
+        --forcedir \
+        --opd \
+        -s ${bedpostDir}/merged \
+        -m ${bedpostDir}/nodif_brain_mask \
+        --dir=${tractDir_MNI}/${side}
+    echo ${subj} MNI thalamo-whole brain tractography on the ${side} done
+else
+    echo ${subj} MNI thalamo-whole brain tractography on the ${side} done
+fi
