@@ -43,39 +43,38 @@ fi
 
 # Freesurfer ROI registration 
 fsThalROI=${roiDir}/${side_s}_thalamus.nii.gz 
-
-
 dtiThalROI=${roiDir}/${side_s}_thalamus_DTI.nii.gz 
 
-#if [ ! -e ${dtiThalROI} ]
-#then 
-    #flirt \
-        #-in ${fsThalROI} \
-        #-ref ${bedpostDir}/nodif_brain_mask.nii.gz \
-        #-applyxfm -init ${regDir}/FREESURFERT1toNodif.mat \
-        #-interp nearestneighbour \
-        #-out ${dtiThalROI}
+if [ ! -e ${dtiThalROI} ]
+then 
+    flirt \
+        -in ${fsThalROI} \
+        -ref ${bedpostDir}/nodif_brain_mask.nii.gz \
+        -applyxfm -init ${regDir}/FREESURFERT1toNodif.mat \
+        -interp nearestneighbour \
+        -out ${dtiThalROI}
+fi
+
+#if [ ! -e lh_thalamus_HOSC_60.nii.gz ]
+#then
+    #fslroi ${FSLDIR}/data/atlases/HarvardOxford/HarvardOxford-sub-prob-2mm.nii.gz lh_thalamus_HOSC.nii.gz 3 1
+    #fslmaths lh_thalalmus_HOSC.nii.gz -thr 60 lh_thalamus_HOSC_60.nii.gz
 #fi
-if [ ! -e lh_thalamus_HOSC_60.nii.gz ]
-then
-    fslroi ${FSLDIR}/data/atlases/HarvardOxford/HarvardOxford-sub-prob-2mm.nii.gz lh_thalamus_HOSC.nii.gz 3 1
-    fslmaths lh_thalalmus_HOSC.nii.gz -thr 60 lh_thalamus_HOSC_60.nii.gz
-fi
 
-if [ ! -e rh_thalamus_HOSC_60.nii.gz ]
-then
-    fslroi ${FSLDIR}/data/atlases/HarvardOxford/HarvardOxford-sub-prob-2mm.nii.gz rh_thalamus_HOSC.nii.gz 14 1
-    fslmaths rh_thalalmus_HOSC.nii.gz -thr 60 rh_thalamus_HOSC_60.nii.gz
-fi
+#if [ ! -e rh_thalamus_HOSC_60.nii.gz ]
+#then
+    #fslroi ${FSLDIR}/data/atlases/HarvardOxford/HarvardOxford-sub-prob-2mm.nii.gz rh_thalamus_HOSC.nii.gz 14 1
+    #fslmaths rh_thalalmus_HOSC.nii.gz -thr 60 rh_thalamus_HOSC_60.nii.gz
+#fi
 
-mniThalROI=${side_s}_thalamus_HOSC_60.nii.gz
+#mniThalROI=${side_s}_thalamus_HOSC_60.nii.gz
 
-if [ ! -e ${tractDir}/${side}/fdt_paths.nii.gz ]
-then
+#if [ ! -e ${tractDir}/${side}/fdt_paths.nii.gz ]
+#then
     rm -rf ${tractDir}/${side} 
     mkdir -p ${tractDir}/${side}
     probtrackx2 \
-        -x ${mniThalROI} \
+        -x ${dtiThalROI} \
         -l \
         --onewaycondition \
         --omatrix2 \
@@ -84,7 +83,6 @@ then
         -S 2000 \
         --steplength=0.5 \
         -P 5000 \
-        --xfm=${regDir}/MNItoNodif.mat \
         --fibthresh=0.01 \
         --distthresh=0.0 \
         --sampvox=0.0 \
@@ -94,6 +92,8 @@ then
         -m ${bedpostDir}/nodif_brain_mask \
         --dir=${tractDir}/${side}
     echo ${subj} thalamo-whole brain tractography on the ${side} done
-else
+#else
     echo ${subj} thalamo-whole brain tractography on the ${side} done
-fi
+#fi
+
+        #--xfm=${regDir}/MNItoNodif.mat \
