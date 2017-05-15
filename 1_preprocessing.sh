@@ -80,17 +80,22 @@ do
     # Estimation of transformation matrix
     # - MNI to DTI
     # - This is more accurately done by going through DTI --> FREESURFER output T1 --> MNI 1mm
+    # Usage: convert_xfm [options] <input-matrix-filename>
+    # e.g. convert_xfm -omat <outmat> -inverse <inmat>
+    #        convert_xfm -omat <outmat_AtoC> -concat <mat_BtoC> <mat_AtoB>
 
-    #Usage: convert_xfm [options] <input-matrix-filename>
-    #  e.g. convert_xfm -omat <outmat> -inverse <inmat>
-    #       convert_xfm -omat <outmat_AtoC> -concat <mat_BtoC> <mat_AtoB>
-
-    
     # MNI --> FREESURFER --> DTI
     if [ ! -e ${regDir}/MNItoNodif.mat ]
     then
         convert_xfm -omat ${regDir}/MNItoNodif.mat \
             -concat ${regDir}/FREESURFERT1toNodif.mat ${regDir}/MNItoFREESURFER.mat
+    fi
+
+    # MNI --> FREESURFER --> DTI
+    if [ ! -e ${regDir}/nodifToMNI.mat ]
+    then
+        convert_xfm -omat ${regDir}/nodifToMNI.mat \
+            -inverse ${regDir}/MNItoNodif.mat
     fi
 
     # ROI extraction
