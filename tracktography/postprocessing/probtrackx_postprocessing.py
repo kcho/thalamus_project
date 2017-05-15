@@ -27,7 +27,7 @@ def voxel_probtrackx(probtrackx_dir):
     # Load coordinate information to save results
     coord = np.loadtxt(coords_file, dtype='int')
     ind = np.ravel_multi_index((coord[:,0], coord[:,1], coord[:,2]), 
-                               dims=(data.shape), 
+                               dims=data.shape, 
                                order='F')
     
     # ravel mask map
