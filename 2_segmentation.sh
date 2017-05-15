@@ -61,7 +61,7 @@ then
         -s 2000 \
         --steplength=0.5 \
         -P 5000 \
-        --xfm=${regDir}/FREESURFERT1toNodif.mat \
+        --xfm=${regDir}/mniToNodif.mat \
         --forcedir \
         --opd \
         -s ${bedpostDir}/merged \

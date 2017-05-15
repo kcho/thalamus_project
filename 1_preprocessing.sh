@@ -61,14 +61,14 @@ do
             -dof 6  -interp trilinear
     fi
 
-    # FREESURFER output T1 --> MNI 1mm
-    if [ ! -e ${regDir}/FREESURFERT1toMNI.mat ]
+    # MNI 2mm --> FREESURFER output T1 
+    if [ ! -e ${regDir}/MNItoFREESURFER.mat ]
     then
         flirt \
-            -in ${fsDir}/mri/brain.nii.gz \
-            -ref /usr/share/fsl/5.0/data/standard/MNI152_T1_1mm_brain.nii.gz \
-            -out ${regDir}/FREESURFERT1toMNI \
-            -omat ${regDir}/FREESURFERT1toMNI.mat \
+            -in /usr/share/fsl/5.0/data/standard/MNI152_T1_2mm_brain.nii.gz \
+            -ref ${fsDir}/mri/brain.nii.gz \
+            -out ${regDir}/MNItoFREESURFER \
+            -omat ${regDir}/MNItoFREESURFER.mat \
             -bins 256 \
             -cost mutualinfo \
             -searchrx -180 180 \
@@ -77,19 +77,20 @@ do
             -dof 6  -interp trilinear
     fi
 
-    # DTI --> FREESURFER output T1 --> MNI 1mm
+    # Estimation of transformation matrix
+    # - MNI to DTI
+    # - This is more accurately done by going through DTI --> FREESURFER output T1 --> MNI 1mm
 
-    if [ ! -e ${regDir}/nodifToFreesurfer.mat ]
-    then
-        convert_xfm \
-            -omat ${regDir}/nodifToFreesurfer.mat \
-            -inverse ${regDir}/FREESURFERT1toNodif.mat
-    fi
+    #Usage: convert_xfm [options] <input-matrix-filename>
+    #  e.g. convert_xfm -omat <outmat> -inverse <inmat>
+    #       convert_xfm -omat <outmat_AtoC> -concat <mat_BtoC> <mat_AtoB>
 
-    if [ ! -e ${regDir}/nodifToMNI.mat ]
+    
+    # MNI --> FREESURFER --> DTI
+    if [ ! -e ${regDir}/MNItoNodif.mat ]
     then
-        convert_xfm -omat ${regDir}/nodifToMNI.mat \
-            -concat ${regDir}/FREESURFERT1toMNI.mat ${regDir}/nodifToFreesurfer.mat
+        convert_xfm -omat ${regDir}/MNItoNodif.mat \
+            -concat ${regDir}/FREESURFERT1toNodif.mat ${regDir}/MNItoFREESURFER.mat
     fi
 
     # ROI extraction
