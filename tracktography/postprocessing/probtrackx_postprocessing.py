@@ -6,14 +6,14 @@ import sys
 from os.path import join, basename
 from scipy.sparse import csr_matrix, coo_matrix
 
-def voxel_probtrackx(probtrackx_dir):
+def voxel_probtrackx(probtrackx_dir, fdt_paths):
     '''
     Converts ROI to whole brain probabilistic tractography output
     to voxelwise connectivity profile 4D nifti map
     https://www.jiscmail.ac.uk/cgi-bin/webadmin?A2=fsl;d3f65c4e.1405
     '''
     fdt_mat2 = join(probtrackx_dir, 'fdt_matrix2.dot')
-    fdt_paths = join(probtrackx_dir, 'fdt_paths.nii.gz')
+    #fdt_paths = join(probtrackx_dir, 'fdt_paths.nii.gz')
     coords_file = join(probtrackx_dir, 'tract_space_coords_for_fdt_matrix2')
 
     # Load Matrix2
@@ -69,4 +69,4 @@ def spconvert(DATA):
     return M
 
 if __name__=='__main__':
-    voxel_probtrackx(sys.argv[1])
+    voxel_probtrackx(sys.argv[1], sys.argv[2])
