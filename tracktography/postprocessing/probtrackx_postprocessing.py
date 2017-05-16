@@ -40,7 +40,9 @@ def voxel_probtrackx(probtrackx_dir, fdt_paths):
         mask_ravel[ind] = M[i,:]
         # edit each volume of the 4D array 
         # with the maps amended as M[i,:] at the coordinates
-        mask4D[:,:,:,i] = mask_ravel.reshape(data.shape) 
+
+        # Edit here
+        mask4D[:,:,:,i] = mask_ravel.reshape(data.shape, 'F') 
 
     # Save the results
     img = nb.Nifti1Image(mask4D, f.affine)
@@ -59,7 +61,6 @@ def spconvert(DATA):
     Convert Data to sparse matrix
     https://gist.github.com/kevinavery/9613505
     '''
-
     dims = DATA.shape[1] - 1
     shape = [np.max(DATA[:,i]) for i in range(dims)]
     M = np.zeros(shape=shape)
