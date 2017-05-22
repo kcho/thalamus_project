@@ -5,7 +5,11 @@ M = full(spconvert(x));
 
 % Load coordinate information to save results
 addpath([getenv('FSLDIR') '/etc/matlab']);
-[mask,~,scales] = read_avw(sprintf('%s/fdt_paths', probDir));
+%[mask,~,scales] = read_avw(sprintf('%s/fdt_paths', probDir));
+[thalProbDir,name,ext] = fileparts(probDir);
+%[subjectDir,name,ext] = fileparts(thalProbDir);
+
+[mask,~,scales] = read_avw(sprintf('%s/DTI/b0', thalProbDir));
 
 coord = load(sprintf('%s/tract_space_coords_for_fdt_matrix2', probDir))+1;
 ind  = sub2ind(size(mask), coord(:,1), coord(:,2), coord(:,3));
