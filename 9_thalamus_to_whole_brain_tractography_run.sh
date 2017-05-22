@@ -5,4 +5,4 @@ do
     echo bash 9_thalamus_to_whole_brain_tractography.sh ${i} lh
     echo bash 9_thalamus_to_whole_brain_tractography.sh ${i} rh
 
-done|parallel -j 20
+done|parallel -j 4
