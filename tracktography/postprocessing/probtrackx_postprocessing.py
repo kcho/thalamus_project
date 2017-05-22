@@ -17,6 +17,7 @@ def voxel_probtrackx(probtrackx_dir, fdt_paths):
     coords_file = join(probtrackx_dir, 'tract_space_coords_for_fdt_matrix2')
 
     # Load Matrix2
+    print('\tLoading fdt_mat2.dot')
     x = np.loadtxt(fdt_mat2, dtype='int')
     M = full(spconvert(x))
 
@@ -26,23 +27,26 @@ def voxel_probtrackx(probtrackx_dir, fdt_paths):
 
     # Load coordinate information to save results
     coord = np.loadtxt(coords_file, dtype='int')
+    newCoord = coord+1
+
     ind = np.ravel_multi_index((coord[:,0], coord[:,1], coord[:,2]), 
                                dims=data.shape, 
                                order='F')
-    
+
     # ravel mask map
     mask_ravel = np.zeros_like(data).ravel()
     mask4D = np.tile(np.zeros_like(data)[:,:,:,np.newaxis], 
                      M.shape[0])
 
     # M.shape[0] : number of voxels used in the tractography
+    print('\tWriting Data')
     for i in range(M.shape[0]):
         mask_ravel[ind] = M[i,:]
         # edit each volume of the 4D array 
         # with the maps amended as M[i,:] at the coordinates
 
         # Edit here
-        mask4D[:,:,:,i] = mask_ravel.reshape(data.shape, 'F') 
+        mask4D[:,:,:,i] = mask_ravel.reshape(data.shape, order='F')
 
     # Save the results
     img = nb.Nifti1Image(mask4D, f.affine)
@@ -71,3 +75,4 @@ def spconvert(DATA):
 
 if __name__=='__main__':
     voxel_probtrackx(sys.argv[1], sys.argv[2])
+
