@@ -5,6 +5,8 @@ import numpy as np
 import sys
 from os.path import join, basename
 from scipy.sparse import csr_matrix, coo_matrix
+import argparse
+import textwrap
 
 def voxel_probtrackx(probtrackx_dir, fdt_paths):
     '''
@@ -76,3 +78,34 @@ def spconvert(DATA):
 if __name__=='__main__':
     voxel_probtrackx(sys.argv[1], sys.argv[2])
 
+    parser = argparse.ArgumentParser(
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description=textwrap.dedent('''\
+                {codeName} : Post-process tractography ran with matrix2 option
+                1. Load fdt_matrix2.dot
+                2. Convert to full matrix
+                3. Save it as 4D matrix according to the 
+                   x,y,z coordinate in tract_coord.txt
+                ========================================
+                eg) {codeName} -i /Users/kevin/NOR04_CKI/tractography
+                eg) {codeName} -i tractographyDir
+                eg) {codeName} -i tractographyDir -t b0_brain.nii.gz
+                '''.format(codeName=os.path.basename(__file__))))
+    parser.add_argument(
+                '-i', '--dir',
+                help='Tractography directory, default=pwd',
+                default=os.getcwd())
+    parser.add_argument(
+                '-t', '--template',
+                help='Template nii image, with the same dimension as the tractography target space',
+                action='store_true')
+
+    args = parser.parse_args()
+
+    if not args.dir:
+        parser.error('No directory given, Please read help')
+
+    if args.template:
+        voxel_probtrackx(args.dir, args.template)
+    else:
+        voxel_probtrackx(args.dir, join(args.dir, 'fdt_paths.nii.gz'))
