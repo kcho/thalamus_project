@@ -95,31 +95,36 @@ fi
     #echo ${subj} MNI thalamo-whole brain tractography on the ${side} done
 #fi
 
-# Below method lead to the fdt_matrix2_reconstructed.nii.gz with different dim4
-# (different thalamic size)
-#if [ ! -e ${tractDir}/${side}/fdt_paths.nii.gz ]
+reconImg=${tractDir_MNI}/${side}/fdt_matrix2_reconstructed.nii.gz
+reconImgMNI=${tractDir_MNI}/${side}/fdt_matrix2_reconstructed_MNI.nii.gz
+reconImg_ds=${tractDir_MNI}/${side}/fdt_matrix2_reconstructed_ds.nii.gz
+
+# probtracks postprocessing
+#if [ ! -e ${reconImg} ]
+#then 
+#echo "Convert ${tractDir_MNI}/${side}/fdt_matrix2 --> ${i}"
+python tracktography/postprocessing/probtrackx_postprocessing.py \
+    -i ${tractDir_MNI}/${side}
+    #${FSLDIR}/data/standard/MNI152_T1_2mm_brain_mask.nii.gz
+#fi
+
+# do it in melodic
+#if [ ! -e ${reconImgMNI} ]
 #then
-    #rm -rf ${tractDir}/${side} 
-    #mkdir -p ${tractDir}/${side}
-    #probtrackx2 \
-        #-x ${mniThalROI} \
-        #-l \
-        #--onewaycondition \
-        #--omatrix2 \
-        #--target2=${bedpostDir}/nodif_brain_mask.nii.gz \
-        #-c 0.2 \
-        #-S 2000 \
-        #--steplength=0.5 \
-        #-P 5000 \
-        #--fibthresh=0.01 \
-        #--distthresh=0.0 \
-        #--sampvox=0.0 \
-        #--forcedir \
-        #--opd \
-        #-s ${bedpostDir}/merged \
-        #-m ${bedpostDir}/nodif_brain_mask \
-        #--dir=${tractDir}/${side}
-    #echo ${subj} thalamo-whole brain tractography on the ${side} done
-#else
-    #echo ${subj} thalamo-whole brain tractography on the ${side} done
+#echo 'Registration'
+#flirt \
+    #-in ${reconImg} \
+    #-ref ${FSLDIR}/data/standard/MNI152_T1_2mm.nii.gz \
+    #-applyxfm -init ${regDir}/nodifToMNI.mat \
+    #-out ${reconImgMNI}
+#fi
+
+#if [ ! -e ${reconImgMNI_ds} ]
+#then
+#echo 'Downsampling'
+flirt \
+    -in ${reconImg} \
+    -ref ${reconImg} \
+    -applyisoxfm 4 \
+    -out ${reconImg_ds}
 #fi
