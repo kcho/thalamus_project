@@ -1,3 +1,4 @@
+#!/home/kangik/anaconda2/bin/python
 # Friday, May 12, 2017
 
 import nibabel as nb
