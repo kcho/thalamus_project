@@ -67,6 +67,9 @@ then
         -out ${mniThalROI}
 fi
 
+# Tractography using fnirt
+mni2fs2nodif=${regDir}/MNI_to_FREESURFER_fnirt_to_Nodif_flirt.nii.gz
+nodif2fs2mni=${regDir}/Nodif_to_FREESURFER_flirt_to_MNI_fnirt.nii.gz
 #if [ ! -e ${tractDir_MNI}/${side}/fdt_paths.nii.gz ]
 #then
     rm -rf ${tractDir_MNI}/${side} 
@@ -77,7 +80,6 @@ fi
         --onewaycondition \
         --omatrix2 \
         --target2=${FSLDIR}/data/standard/MNI152_T1_2mm_brain_mask.nii.gz \
-        --xfm=${regDir}/MNItoNodif.mat \
         -c 0.2 \
         -S 2000 \
         --steplength=0.5 \
@@ -85,6 +87,8 @@ fi
         --fibthresh=0.01 \
         --distthresh=0.0 \
         --sampvox=0.0 \
+        --xfm=${mni2fs2nodif} \
+        --invxfm=${nodif2fs2mni} \
         --forcedir \
         --opd \
         -s ${bedpostDir}/merged \
@@ -96,7 +100,7 @@ fi
 #fi
 
 reconImg=${tractDir_MNI}/${side}/fdt_matrix2_reconstructed.nii.gz
-reconImgMNI=${tractDir_MNI}/${side}/fdt_matrix2_reconstructed_MNI.nii.gz
+reconImg4s=${tractDir_MNI}/${side}/fdt_matrix2_reconstructed_4s.nii.gz
 reconImg_ds=${tractDir_MNI}/${side}/fdt_matrix2_reconstructed_ds.nii.gz
 
 # probtracks postprocessing
@@ -108,16 +112,8 @@ python tracktography/postprocessing/probtrackx_postprocessing.py \
     #${FSLDIR}/data/standard/MNI152_T1_2mm_brain_mask.nii.gz
 #fi
 
-# do it in melodic
-#if [ ! -e ${reconImgMNI} ]
-#then
-#echo 'Registration'
-#flirt \
-    #-in ${reconImg} \
-    #-ref ${FSLDIR}/data/standard/MNI152_T1_2mm.nii.gz \
-    #-applyxfm -init ${regDir}/nodifToMNI.mat \
-    #-out ${reconImgMNI}
-#fi
+## smoothing
+fslmaths ${reconImg} -kernel gauss 1.69865806 -fmean ${reconImg4s}
 
 #if [ ! -e ${reconImgMNI_ds} ]
 #then
