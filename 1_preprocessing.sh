@@ -88,6 +88,7 @@ do
     # FNIRT MNI --> Freesurfer
     #============================================================
     mni2fs_fnirt=${regDir}/MNI_to_FREESURFER_fnirt_coeff.nii.gz
+    echo flirt 
     if [ ! -e ${mni2fs_fnirt} ]
     then
         fnirt \
@@ -100,7 +101,7 @@ do
             --cout=${mni2fs_fnirt}
     fi
     
-    # Freesurfer --> MNI
+    # MNI --fnirt--> Freesurfer --flirt--> nodif
     mni2fs2nodif=${regDir}/MNI_to_FREESURFER_fnirt_to_Nodif_flirt.nii.gz
     if [ ! -e ${mni2fs2nodif} ]
     then
@@ -111,7 +112,7 @@ do
             --out=${mni2fs2nodif}
     fi
 
-
+    # nodif --flirt--> Freesurfer --fnirt--> MNI
     nodif2fs2mni=${regDir}/Nodif_to_FREESURFER_flirt_to_MNI_fnirt.nii.gz
     if [ ! -e ${nodif2fs2mni} ]
     then
@@ -121,13 +122,14 @@ do
             --out=${nodif2fs2mni}
     fi
 
+    # Check ouput image
     mni2nodif_fnfl_img=${regDir}/MNI_in_Nodif_FNIRT_FLIRT.nii.gz
-    if [ ! -e ${mni2nodif_fnfl_img} ]
+    if [ -e ${mni2nodif_fnfl_img} ]
     then
         applywarp \
-            --ref=${dtiDir}/nodif_brain.nii.gz \
+            --ref=${dtiDir}/nodif_brain_mask.nii.gz \
             --in=${mni2mm} \
-            --warp=${nodif2fs2mni} \
+            --warp=${mni2fs2nodif} \
             --out=${mni2nodif_fnfl_img}
     fi
 
