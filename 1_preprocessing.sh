@@ -124,7 +124,7 @@ do
 
     # Check ouput image
     mni2nodif_fnfl_img=${regDir}/MNI_in_Nodif_FNIRT_FLIRT.nii.gz
-    if [ -e ${mni2nodif_fnfl_img} ]
+    if [ ! -e ${mni2nodif_fnfl_img} ]
     then
         applywarp \
             --ref=${dtiDir}/nodif_brain_mask.nii.gz \
