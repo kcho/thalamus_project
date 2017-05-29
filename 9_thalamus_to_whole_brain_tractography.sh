@@ -107,8 +107,8 @@ reconImg_ds=${tractDir_MNI}/${side}/fdt_matrix2_reconstructed_ds.nii.gz
 #if [ ! -e ${reconImg} ]
 #then 
 #echo "Convert ${tractDir_MNI}/${side}/fdt_matrix2 --> ${i}"
-python tracktography/postprocessing/probtrackx_postprocessing.py \
-    -i ${tractDir_MNI}/${side}
+#python tracktography/postprocessing/probtrackx_postprocessing.py \
+    #-i ${tractDir_MNI}/${side}
     #${FSLDIR}/data/standard/MNI152_T1_2mm_brain_mask.nii.gz
 #fi
 

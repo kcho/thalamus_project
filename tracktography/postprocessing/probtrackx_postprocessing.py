@@ -29,6 +29,7 @@ def voxel_probtrackx(probtrackx_dir, fdt_paths):
 
     # Load Matrix2
     print('\tLoading fdt_mat2.dot')
+    print(fdt_mat2)
     try:
         x = np.loadtxt(fdt_mat2, dtype='int')
     except IOError as e:
@@ -114,10 +115,10 @@ if __name__=='__main__':
 
     args = parser.parse_args()
 
-    #if not args.dir:
-        #parser.error('No directory given, Please read help')
+    if not args.dir:
+        parser.error('No directory given, Please read help')
 
-    #if args.template:
-        #voxel_probtrackx(args.dir, args.template)
-    #else:
-        #voxel_probtrackx(args.dir, join(args.dir, 'fdt_paths.nii.gz'))
+    if args.template:
+        voxel_probtrackx(args.dir, args.template)
+    else:
+        voxel_probtrackx(args.dir, join(args.dir, 'fdt_paths.nii.gz'))
