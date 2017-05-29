@@ -114,10 +114,10 @@ if __name__=='__main__':
 
     args = parser.parse_args()
 
-    if not args.dir:
-        parser.error('No directory given, Please read help')
+    #if not args.dir:
+        #parser.error('No directory given, Please read help')
 
-    if args.template:
-        voxel_probtrackx(args.dir, args.template)
-    else:
-        voxel_probtrackx(args.dir, join(args.dir, 'fdt_paths.nii.gz'))
+    #if args.template:
+        #voxel_probtrackx(args.dir, args.template)
+    #else:
+        #voxel_probtrackx(args.dir, join(args.dir, 'fdt_paths.nii.gz'))
