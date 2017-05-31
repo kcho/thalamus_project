@@ -49,7 +49,7 @@ def postMelodic(melodicDir):
     icMap = join(melodicDir, 'melodic_IC.nii.gz')
     
     # fsl_glm
-    for num, imgInput in enumerate(imgInputs[0:2]):
+    for num, imgInput in enumerate(imgInputs):
         print('\tRunning fsl_glm processes on {0}'.format(
             re.search('\w{3}\d{2}_\w{3,4}', imgInput).group(0)))
         fsl_reg_out = 'fsl_glm_output_{0}'.format(num)
@@ -65,43 +65,33 @@ def postMelodic(melodicDir):
 
         # read output from the fsl_glm
         fsl_glm_mat = np.loadtxt(fsl_reg_out)
+        componentNum = fsl_glm_mat.shape[1]
 
         # z-score conversion
         fsl_glm_mat_z = stats.zscore(fsl_glm_mat, axis=1)
 
-        # threshold 
-        fsl_glm_threshold = 2
 
         # Make empty array
-        componentNum = fsl_glm_mat.shape[1]
-
-        mask_ravel = np.zeros_like(thalData).ravel()
-        mask_ravel_rep = np.tile(mask_ravel[:, np.newaxis], componentNum)
+        # mask_ravel_rep : whole brain ravel x component number
+        # thalInd_rep : thalamic indices x component number 
+        mask_ravel_rep = np.tile(np.zeros_like(thalData).ravel()[:, np.newaxis], componentNum)
         thalInd_rep = np.tile(thalInd[:, np.newaxis], componentNum)
 
+        # Threshold the z-score map
         # Thalamic coord greater than the threshold
+        fsl_glm_threshold = 2
         thalInd_one = thalInd_rep * (fsl_glm_mat_z > fsl_glm_threshold)
 
         for i in range(componentNum):
+            # Mask with each column thalamic indices
+            # to each column of the mask_ravel_rep
             mask_ravel_rep[thalInd_one[:,i], i] = 1
 
+        print('\t\tWriting IC image for the subject')
         mask4D = mask_ravel_rep.reshape([thalData.shape[0], thalData.shape[1], thalData.shape[2], 
                                          componentNum], order='F')
-
         img = nb.Nifti1Image(mask4D, thalamus.affine)
-        img.to_filename('{0}_recon.nii.gz'.format(num))
-
-        #print('\tWriting Data')
-        #for i in range(melodicMat.shape[0]):
-            #mask_ravel[thalInd] = melodicMat[i,:,:].argmax(axis=1)
-            ## edit each volume of the 4D array 
-            ## with the maps amended as M[i,:] at the coordinates
-            ## Edit here
-            #mask4D[:,:,:,i] = mask_ravel.reshape(thalData.shape, order='F')
-
-        # Save the results
-        #img = nb.Nifti1Image(mask4D, thalamus.affine)
-        #img.to_filename(join(melodicDir, 'recon.nii.gz'))
+        img.to_filename('{0}_IC.nii.gz'.format(num))
 
 def postMelodic_pre(melodicDir):
     # Loading thalamic ROI in MNI space 

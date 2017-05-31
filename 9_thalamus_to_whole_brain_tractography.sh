@@ -70,8 +70,8 @@ fi
 # Tractography using fnirt
 mni2fs2nodif=${regDir}/MNI_to_FREESURFER_fnirt_to_Nodif_flirt.nii.gz
 nodif2fs2mni=${regDir}/Nodif_to_FREESURFER_flirt_to_MNI_fnirt.nii.gz
-#if [ ! -e ${tractDir_MNI}/${side}/fdt_paths.nii.gz ]
-#then
+if [ ! -e ${tractDir_MNI}/${side}/fdt_paths.nii.gz ]
+then
     rm -rf ${tractDir_MNI}/${side} 
     mkdir -p ${tractDir_MNI}/${side}
     probtrackx2 \
@@ -95,22 +95,22 @@ nodif2fs2mni=${regDir}/Nodif_to_FREESURFER_flirt_to_MNI_fnirt.nii.gz
         -m ${bedpostDir}/nodif_brain_mask \
         --dir=${tractDir_MNI}/${side}
     echo ${subj} MNI thalamo-whole brain tractography on the ${side} done
-#else
-    #echo ${subj} MNI thalamo-whole brain tractography on the ${side} done
-#fi
+else
+    echo ${subj} MNI thalamo-whole brain tractography on the ${side} done
+fi
 
 reconImg=${tractDir_MNI}/${side}/fdt_matrix2_reconstructed.nii.gz
 reconImg4s=${tractDir_MNI}/${side}/fdt_matrix2_reconstructed_4s.nii.gz
 reconImg_ds=${tractDir_MNI}/${side}/fdt_matrix2_reconstructed_ds.nii.gz
 
 # probtracks postprocessing
-#if [ ! -e ${reconImg} ]
-#then 
-#echo "Convert ${tractDir_MNI}/${side}/fdt_matrix2 --> ${i}"
-#python tracktography/postprocessing/probtrackx_postprocessing.py \
-    #-i ${tractDir_MNI}/${side}
-    #${FSLDIR}/data/standard/MNI152_T1_2mm_brain_mask.nii.gz
-#fi
+if [ ! -e ${reconImg} ]
+then 
+    echo "Convert ${tractDir_MNI}/${side}/fdt_matrix2 --> ${i}"
+    python tracktography/postprocessing/probtrackx_postprocessing.py \
+        -i ${tractDir_MNI}/${side}
+        #${FSLDIR}/data/standard/MNI152_T1_2mm_brain_mask.nii.gz
+fi
 
 ## smoothing
 fslmaths ${reconImg} -kernel gauss 1.69865806 -fmean ${reconImg4s}

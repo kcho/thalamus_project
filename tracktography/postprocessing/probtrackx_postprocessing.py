@@ -29,7 +29,6 @@ def voxel_probtrackx(probtrackx_dir, fdt_paths):
 
     # Load Matrix2
     print('\tLoading fdt_mat2.dot')
-    print(fdt_mat2)
     try:
         x = np.loadtxt(fdt_mat2, dtype='int')
     except IOError as e:
