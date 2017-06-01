@@ -1,4 +1,4 @@
-#!/home/kangik/anaconda2/bin/python
+#!/ccnc/anaconda2/bin/python
 
 import nibabel as nb
 import numpy as np
@@ -47,8 +47,10 @@ def postMelodic(melodicDir):
 
     imgInputs = grepImgInputs(melodicDir)
     icMap = join(melodicDir, 'melodic_IC.nii.gz')
+    icMap_nb = nb.load(icMap)
     
     # fsl_glm
+    averageMap = np.tile(thalNZ[:,:,:, np.newaxis], 
     for num, imgInput in enumerate(imgInputs):
         print('\tRunning fsl_glm processes on {0}'.format(
             re.search('\w{3}\d{2}_\w{3,4}', imgInput).group(0)))
@@ -80,12 +82,15 @@ def postMelodic(melodicDir):
         # Threshold the z-score map
         # Thalamic coord greater than the threshold
         fsl_glm_threshold = 2
-        thalInd_one = thalInd_rep * (fsl_glm_mat_z > fsl_glm_threshold)
+        fsl_glm_zt = fsl_glm_mat_z > fsl_glm_threshold
 
-        for i in range(componentNum):
-            # Mask with each column thalamic indices
-            # to each column of the mask_ravel_rep
-            mask_ravel_rep[thalInd_one[:,i], i] = 1
+        mask_ravel_rep[thalInd, :] = fsl_glm_mat_z
+
+        #for i in range(componentNum):
+            ## Mask with each column thalamic indices
+            ## to each column of the mask_ravel_rep
+            #mask_ravel_rep[fsl_glm_zt[:,i], i] = fsl_glm_mat_z
+            ##mask_ravel_rep[fsl_glm_zt[:,i], i] = fsl_glm_mat_z[fsl_glm_mat_z > fsl_glm_threshold][:,i]
 
         print('\t\tWriting IC image for the subject')
         mask4D = mask_ravel_rep.reshape([thalData.shape[0], thalData.shape[1], thalData.shape[2], 
@@ -148,6 +153,9 @@ def postMelodic_pre(melodicDir):
     img.to_filename(join(melodicDir, 'recon.nii.gz'))
 
 
+
+def makeGraph(melodicDir):
+    kkkkkkkkkkkkkkkkkkkk
 if __name__=='__main__':
     parser = argparse.ArgumentParser(
                 formatter_class=argparse.RawDescriptionHelpFormatter,
