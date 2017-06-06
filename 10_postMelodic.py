@@ -173,50 +173,19 @@ def postMelodic(melodicDir):
 
     # Reading outputs from the fsl_glm
     # Make a containner
-    fsl_glm_mat_subj = np.zeros(thalVoxelNum * componentNum * subjectNum)
-    fsl_glm_mat_subj = fsl_glm_mat_subj.reshape(thalVoxelNum, componentNum, subjectNum)
+    fsl_glm_mat_sub = np.zeros(thalVoxelNum * componentNum * subjectNum)
+    fsl_glm_mat_sub = fsl_glm_mat_sub.reshape(thalVoxelNum, componentNum, subjectNum)
 
-    if not os.path.isfile('sumMap.npy'):
-        # for each subject fsl_glm outputs
+    # for each subject, read fsl_glm outputs
+    fsl_glm_mat_loc = join(melodicDir, 
+                           'fsl_glm_mat_sub.npy')
+    if not os.path.isfile(fsl_glm_mat_loc):
         for num, imgInput in enumerate(imgInputs):
-            print num
-            # read output from the fsl_glm
-            fsl_reg_out = 'fsl_glm_output_{0}'.format(num)
-            fsl_glm_mat = np.loadtxt(fsl_reg_out)
-
-            # z-score conversion
-            # axis=1 option states to estimate z-scores 
-            # from the samples in the same component
-            # fsl_glm_mat_z = stats.zscore(fsl_glm_mat, axis=1) --> does not survive threshold 3.1
-            fsl_glm_mat_z = stats.zscore(fsl_glm_mat)
-            fsl_glm_threshold = 3.1
-            #fsl_glm_mat_z[fsl_glm_mat_z < fsl_glm_threshold] = 0
-
-            # Make empty array
-            # mask_ravel_rep : whole brain ravel x component number
-            # thalInd_rep : thalamic indices x component number 
-            #mask_ravel_rep = np.tile(np.zeros_like(thalData).ravel()[:, np.newaxis], componentNum)
-            #thalInd_rep = np.tile(thalInd[:, np.newaxis], componentNum)
-
-            # Threshold the z-score map
-            # Thalamic coord greater than the threshold
-
-            # save to fsl_glm_mat_subj matrix
-            fsl_glm_mat_subj[:,:, num] = fsl_glm_mat_z
-
-            #mask_ravel_rep[thalInd, :] = fsl_glm_mat_z
-
-            #print('\t\tWriting IC image for the subject')
-            #mask4D = mask_ravel_rep.reshape([thalData.shape[0], thalData.shape[1], thalData.shape[2], 
-                                             #componentNum], order='F')
-            #Add to mean matrix
-            #sumMap += mask4D
-            #img = nb.Nifti1Image(mask4D, thalamus.affine)
-            #img.to_filename('{0}_IC.nii.gz'.format(num))
-        #np.save('sumMap', sumMap)
-        np.save('fsl_glm_mat_subj', fsl_glm_mat_subj)
-
-    fsl_glm_mat_subj = np.load('fsl_glm_mat_subj.npy')
+            fsl_glm_mat_z = read_glm_outputs(num)
+            fsl_glm_mat_sub[:,:, num] = fsl_glm_mat_z
+        np.save('fsl_glm_mat_sub', fsl_glm_mat_sub)
+    else:
+        fsl_glm_mat_sub = np.load('fsl_glm_mat_sub.npy')
     # Make empty array
     # mask_ravel_rep : whole brain ravel x component number
     # mask_ravel_rep_sub : whole brain ravel x component number x subject number
@@ -225,17 +194,17 @@ def postMelodic(melodicDir):
     mask_ravel_rep = np.tile(np.zeros_like(thalData).ravel()[:, np.newaxis], componentNum)
     mask_ravel_rep_sub = np.tile(mask_ravel_rep[:,:, np.newaxis], subjectNum)
 
-    #mask_ravel_rep_sub[thalInd_rep_sub, :] = fsl_glm_mat_subj
-    mask_ravel_rep_sub[thalInd, :,:] = fsl_glm_mat_subj
+    #mask_ravel_rep_sub[thalInd_rep_sub, :] = fsl_glm_mat_sub
+    mask_ravel_rep_sub[thalInd, :,:] = fsl_glm_mat_sub
     print mask_ravel_rep_sub.shape
     mask5D = mask_ravel_rep_sub.reshape([thalData.shape[0], thalData.shape[1], thalData.shape[2], 
                                       componentNum, subjectNum], order='F')
     
     fig, axes = plt.subplots(ncols=4, nrows=2, figsize=(20,5))
-    [a,b,c,d,e,f,g,h,i,j] = axes[0][0].plot(fsl_glm_mat_subj[:,:,0], label='first subject')
-    axes[0][1].plot(fsl_glm_mat_subj[:,:,1], label='second subject')
-    axes[0][2].plot(fsl_glm_mat_subj[:,:,2], label='third subject')
-    axes[0][3].plot(fsl_glm_mat_subj[:,:,3], label='fourth subject')
+    [a,b,c,d,e,f,g,h,i,j] = axes[0][0].plot(fsl_glm_mat_sub[:,:,0], label='first subject')
+    axes[0][1].plot(fsl_glm_mat_sub[:,:,1], label='second subject')
+    axes[0][2].plot(fsl_glm_mat_sub[:,:,2], label='third subject')
+    axes[0][3].plot(fsl_glm_mat_sub[:,:,3], label='fourth subject')
 
     plt.legend([a,b,c,d,e,f,g,h,i,j], ['1','2','3','4','5','6','7','8','9','10'], loc=1)
 
@@ -259,6 +228,19 @@ def postMelodic(melodicDir):
 
     #img = nb.Nifti1Image(sumMap, thalamus.affine)
     #img.to_filename('sum_IC.nii.gz'.format(num))
+
+def read_glm_outputs(num):
+    # read output from the fsl_glm
+
+    fsl_reg_out = 'fsl_glm_output_{0}'.format(num)
+    fsl_glm_mat = np.loadtxt(fsl_reg_out)
+
+    # z-score conversion
+    # axis=1 option states to estimate z-scores 
+    # from the samples in the same component
+    # fsl_glm_mat_z = stats.zscore(fsl_glm_mat, axis=1) --> does not survive threshold 3.1
+    fsl_glm_mat_z = stats.zscore(fsl_glm_mat)
+    return fsl_glm_mat_z
 
 def postMelodic_pre(melodicDir):
     # Loading thalamic ROI in MNI space 
