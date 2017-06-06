@@ -122,8 +122,11 @@ def postMelodic(melodicDir):
                                order='F')
 
     imgInputs = grepImgInputs(melodicDir)
+    subjectNum = len(imgInputs)
+
     icMap = join(melodicDir, 'melodic_IC.nii.gz')
     icMap_nb = nb.load(icMap)
+    componentNum = icMap_nb.shape[3]
     
 
     # Mixture-modelling outputs
@@ -154,24 +157,24 @@ def postMelodic(melodicDir):
     # representing a p-value of less than 0.001 that a thalamic voxel contributes towards an individual component.
     # 3.1
 
-    # run fsl_glm
+    # Running fsl_glm
+    # Make inputList for parallel processing
     inputList = []
     for num, imgInput in enumerate(imgInputs):
         inputList.append((num, imgInput, icMap))
     pool = multiprocessing.Pool(5)
     print('\t\tRunning fsl_glm in parallel')
+
+    # Run fsl_glm in parallel
     for i,_ in enumerate(pool.imap_unordered(fslglm, inputList), 1):
         sys.stderr.write('\rProgress {0:%}'.format(i/len(inputList)))
     print()
 
-    # read outputs from the fsl_glm
-    componentNum = icMap_nb.shape[3]
 
-    fsl_glm_mat_subj = np.zeros(thalVoxelNum * componentNum * len(imgInputs))
-    fsl_glm_mat_subj = fsl_glm_mat_subj.reshape(thalVoxelNum, componentNum, len(imgInputs))
-
-    print fsl_glm_mat_subj.shape
-    print len(imgInputs)
+    # Reading outputs from the fsl_glm
+    # Make a containner
+    fsl_glm_mat_subj = np.zeros(thalVoxelNum * componentNum * subjectNum)
+    fsl_glm_mat_subj = fsl_glm_mat_subj.reshape(thalVoxelNum, componentNum, subjectNum)
 
     if not os.path.isfile('sumMap.npy'):
         # for each subject fsl_glm outputs
@@ -213,7 +216,6 @@ def postMelodic(melodicDir):
         #np.save('sumMap', sumMap)
         np.save('fsl_glm_mat_subj', fsl_glm_mat_subj)
 
-
     fsl_glm_mat_subj = np.load('fsl_glm_mat_subj.npy')
     # Make empty array
     # mask_ravel_rep : whole brain ravel x component number
@@ -221,13 +223,13 @@ def postMelodic(melodicDir):
     # thalInd_rep : thalamic indices x component number 
     # thalInd_rep_sub : thalamic indices x component number x subject number
     mask_ravel_rep = np.tile(np.zeros_like(thalData).ravel()[:, np.newaxis], componentNum)
-    mask_ravel_rep_sub = np.tile(mask_ravel_rep[:,:, np.newaxis], len(imgInputs))
+    mask_ravel_rep_sub = np.tile(mask_ravel_rep[:,:, np.newaxis], subjectNum)
 
     #mask_ravel_rep_sub[thalInd_rep_sub, :] = fsl_glm_mat_subj
     mask_ravel_rep_sub[thalInd, :,:] = fsl_glm_mat_subj
     print mask_ravel_rep_sub.shape
     mask5D = mask_ravel_rep_sub.reshape([thalData.shape[0], thalData.shape[1], thalData.shape[2], 
-                                      componentNum, len(imgInputs)], order='F')
+                                      componentNum, subjectNum], order='F')
     
     fig, axes = plt.subplots(ncols=4, nrows=2, figsize=(20,5))
     [a,b,c,d,e,f,g,h,i,j] = axes[0][0].plot(fsl_glm_mat_subj[:,:,0], label='first subject')
