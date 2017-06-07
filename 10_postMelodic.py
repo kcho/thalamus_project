@@ -101,7 +101,7 @@ def grepImgInputs(melodicDir):
             imgInputs.append(dataLoc+'.nii.gz')
         except:
             pass
-    return imgInputs
+    return set(imgInputs)
 
 def postMelodic(melodicDir):
     '''
@@ -160,11 +160,11 @@ def postMelodic(melodicDir):
     for num, imgInput in enumerate(imgInputs):
         inputList.append((num, imgInput, icMap_loc))
     pool = multiprocessing.Pool(5)
-    print('\t\tRunning fsl_glm in parallel')
+    print('\tRunning fsl_glm in parallel')
 
     # Run fsl_glm in parallel
     for i,_ in enumerate(pool.imap_unordered(fslglm, inputList), 1):
-        sys.stderr.write('\r\t\tProgress {0:%}'.format(i/len(inputList)))
+        sys.stderr.write('\r\tProgress {0:%}'.format(i/len(inputList)))
     print()
 
     # Reading outputs from the fsl_glm
@@ -267,14 +267,13 @@ def draw_max_segmentation(mat, thalData, thalInd):
     # Brain
     vmax=3
     cmaps = colors.LinearSegmentedColormap.from_list('hsv', 
-                                                     [(compNum/(icNum), col) for compNum,col in cmap_dict.iteritems()],
-                                                     N=icNum)
+                                                     [(compNum/(icNum), col) for compNum,col in cmap_dict.iteritems()]
+                                                    )
+                                                     #N=icNum)
     startSlice=35
     for axNum in range(10):
-        #s = baxes[axNum].imshow(np.flipud(threeDmap[15:75, 40:75, startSlice].T),
-                                #cmap = cmaps)
-        s = baxes[axNum].imshow(np.flipud(threeDmap[15:75, 40:75, startSlice].T))
-        
+        s = baxes[axNum].imshow(np.flipud(threeDmap[15:75, 40:75, startSlice].T),
+                                cmap = cmaps)
         baxes[axNum].set_title(startSlice)
         baxes[axNum].axes.yaxis.set_ticklabels([])
         baxes[axNum].axes.xaxis.set_ticklabels([])
