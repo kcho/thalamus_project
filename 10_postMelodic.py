@@ -116,9 +116,26 @@ def postMelodic(melodicDir):
     imgInputs = grepImgInputs(melodicDir)
     subjectNum = len(imgInputs)
 
+    icMap_loc = join(melodicDir, 'melodic_IC.nii.gz')
+    icMap_nb = nb.load(icMap_loc)
+    componentNum = icMap_nb.shape[3]
+
+    voxSize = icMap_nb.header.get_zooms()[0]
+    if zooms[0] == 4:
+        mniLoc = '/Volume/CCNC_W1_2T/2017_CHR_thalamus_microstructure_kcho/allData/scripts/MNI152_T1_2mm_ds_mask.nii.gz'
+        thalamusLoc = '/Volume/CCNC_W1_2T/2017_CHR_thalamus_microstructure_kcho/allData/scripts/lh_thalamus_HOSC_60_ds.nii.gz'
+    elif zooms[0] == 3:
+        mniLoc = '/Volume/CCNC_W1_2T/2017_CHR_thalamus_microstructure_kcho/allData/scripts/MNI152_T1_2mm_ds_3_mask.nii.gz'
+        thalamusLoc = '/Volume/CCNC_W1_2T/2017_CHR_thalamus_microstructure_kcho/allData/scripts/lh_thalamus_HOSC_60_ds_3.nii.gz'
+    else:
+        mniLoc = '/usr/share/fsl/5.0/data/standard/MNI152_T1_2mm.nii.gz'
+        thalamusLoc = '/Volume/CCNC_W1_2T/2017_CHR_thalamus_microstructure_kcho/allData/scripts/lh_thalamus_HOSC_60.nii.gz'
+
+
     # Loading thalamic ROI in MNI space 
     print('\tLoading thalamic ROI') 
-    thalamus = nb.load('/Volume/CCNC_W1_2T/2017_CHR_thalamus_microstructure_kcho/allData/scripts/lh_thalamus_HOSC_60.nii.gz') 
+
+    thalamus = nb.load() 
     thalData = thalamus.get_data() 
     thalNZ = np.nonzero(thalData) 
     thalVoxelNum = len(thalNZ[0]) 
@@ -128,9 +145,6 @@ def postMelodic(melodicDir):
                                dims=thalData.shape, 
                                order='F')
 
-    icMap_loc = join(melodicDir, 'melodic_IC.nii.gz')
-    icMap_nb = nb.load(icMap_loc)
-    componentNum = icMap_nb.shape[3]
 
     # Mixture-modelling outputs
     # -------------------------
