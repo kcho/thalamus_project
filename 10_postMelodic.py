@@ -5,7 +5,7 @@ import multiprocessing
 import numpy as np
 import re
 import sys, os
-from os.path import join, basename
+from os.path import join, basename, isfile, isdir
 from scipy.sparse import csr_matrix, coo_matrix
 from scipy import stats
 import argparse
@@ -79,8 +79,12 @@ def graph(icMap_nb, sumMap, affine):
         #plotting.show()
 
 def fslglm(inputList):
-    num, imgInput, icMap = inputList
-    fsl_reg_out = 'fsl_glm_output_{0}'.format(num)
+    num, imgInput, icMap, melodicDir = inputList
+    outDir = join(melodicDir, 'glm_out_dir')
+    if not isdir(outDir):
+        os.mkdir(outDir)
+
+    fsl_reg_out = join(outDir, 'fsl_glm_output_{0}'.format(num))
 
     # fsl_glm
     command = 'fsl_glm -i {subjectMap} -d {melodicIC} -o {fsl_reg_out}'.format(
@@ -160,7 +164,7 @@ def postMelodic(melodicDir):
     # Make inputList for parallel processing
     inputList = []
     for num, imgInput in enumerate(imgInputs):
-        inputList.append((num, imgInput, icMap_loc))
+        inputList.append((num, imgInput, icMap_loc, melodicDir))
     pool = multiprocessing.Pool(5)
     print('\tRunning fsl_glm in parallel')
 
@@ -180,9 +184,9 @@ def postMelodic(melodicDir):
         for num, imgInput in enumerate(imgInputs):
             fsl_glm_mat_z = read_glm_outputs(num)
             fsl_glm_mat_sub[:,:, num] = fsl_glm_mat_z
-        np.save('fsl_glm_mat_sub', fsl_glm_mat_sub)
+        np.save(join(melodicDir, 'fsl_glm_mat_sub'), fsl_glm_mat_sub)
     else:
-        fsl_glm_mat_sub = np.load('fsl_glm_mat_sub.npy')
+        fsl_glm_mat_sub = np.load(join(melodicDir, 'fsl_glm_mat_sub.npy'))
 
     # Make empty array
     # mask_ravel_rep : whole brain ravel x component number
