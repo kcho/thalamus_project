@@ -16,6 +16,8 @@ import matplotlib.gridspec as gridspec
 import matplotlib.patches as mpatches
 import matplotlib.cm as cmx
 import matplotlib.colors as colors
+from __future__ import division
+
 
 from nilearn import plotting
 from nilearn.image import iter_img
