@@ -14,6 +14,9 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import matplotlib.patches as mpatches
+import matplotlib.cm as cmx
+import matplotlib.colors as colors
+
 from nilearn import plotting
 from nilearn.image import iter_img
 from copy import copy
@@ -104,6 +107,9 @@ def postMelodic(melodicDir):
     '''
     Process melodic outputs
     '''
+    imgInputs = grepImgInputs(melodicDir)
+    subjectNum = len(imgInputs)
+
     # Loading thalamic ROI in MNI space 
     print('\tLoading thalamic ROI') 
     thalamus = nb.load('/Volume/CCNC_W1_2T/2017_CHR_thalamus_microstructure_kcho/allData/scripts/lh_thalamus_HOSC_60.nii.gz') 
@@ -111,23 +117,14 @@ def postMelodic(melodicDir):
     thalNZ = np.nonzero(thalData) 
     thalVoxelNum = len(thalNZ[0]) 
 
-    print('\tLoading track space coordinate')
-    probtrackx_dir = '/Volume/CCNC_W1_2T/2017_CHR_thalamus_microstructure_kcho/allData/CHR04_PJH/thalamus_tractography_MNI/left'
-    coords_file = join(probtrackx_dir, 'tract_space_coords_for_fdt_matrix2')
-    coord = np.loadtxt(coords_file, dtype='int')
-
     # Return the index number of the thalamic voxels in ravel format
     thalInd = np.ravel_multi_index((thalNZ[0],thalNZ[1],thalNZ[2]),
                                dims=thalData.shape, 
                                order='F')
 
-    imgInputs = grepImgInputs(melodicDir)
-    subjectNum = len(imgInputs)
-
-    icMap = join(melodicDir, 'melodic_IC.nii.gz')
-    icMap_nb = nb.load(icMap)
+    icMap_loc = join(melodicDir, 'melodic_IC.nii.gz')
+    icMap_nb = nb.load(icMap_loc)
     componentNum = icMap_nb.shape[3]
-    
 
     # Mixture-modelling outputs
     # -------------------------
@@ -161,15 +158,14 @@ def postMelodic(melodicDir):
     # Make inputList for parallel processing
     inputList = []
     for num, imgInput in enumerate(imgInputs):
-        inputList.append((num, imgInput, icMap))
+        inputList.append((num, imgInput, icMap_loc))
     pool = multiprocessing.Pool(5)
     print('\t\tRunning fsl_glm in parallel')
 
     # Run fsl_glm in parallel
     for i,_ in enumerate(pool.imap_unordered(fslglm, inputList), 1):
-        sys.stderr.write('\rProgress {0:%}'.format(i/len(inputList)))
+        sys.stderr.write('\r\t\tProgress {0:%}'.format(i/len(inputList)))
     print()
-
 
     # Reading outputs from the fsl_glm
     # Make a containner
@@ -177,8 +173,7 @@ def postMelodic(melodicDir):
     fsl_glm_mat_sub = fsl_glm_mat_sub.reshape(thalVoxelNum, componentNum, subjectNum)
 
     # for each subject, read fsl_glm outputs
-    fsl_glm_mat_loc = join(melodicDir, 
-                           'fsl_glm_mat_sub.npy')
+    fsl_glm_mat_loc = join(melodicDir, 'fsl_glm_mat_sub.npy')
     if not os.path.isfile(fsl_glm_mat_loc):
         for num, imgInput in enumerate(imgInputs):
             fsl_glm_mat_z = read_glm_outputs(num)
@@ -186,33 +181,21 @@ def postMelodic(melodicDir):
         np.save('fsl_glm_mat_sub', fsl_glm_mat_sub)
     else:
         fsl_glm_mat_sub = np.load('fsl_glm_mat_sub.npy')
+
     # Make empty array
     # mask_ravel_rep : whole brain ravel x component number
     # mask_ravel_rep_sub : whole brain ravel x component number x subject number
-    # thalInd_rep : thalamic indices x component number 
-    # thalInd_rep_sub : thalamic indices x component number x subject number
     mask_ravel_rep = np.tile(np.zeros_like(thalData).ravel()[:, np.newaxis], componentNum)
     mask_ravel_rep_sub = np.tile(mask_ravel_rep[:,:, np.newaxis], subjectNum)
-
-    #mask_ravel_rep_sub[thalInd_rep_sub, :] = fsl_glm_mat_sub
     mask_ravel_rep_sub[thalInd, :,:] = fsl_glm_mat_sub
-    print mask_ravel_rep_sub.shape
-    mask5D = mask_ravel_rep_sub.reshape([thalData.shape[0], thalData.shape[1], thalData.shape[2], 
-                                      componentNum, subjectNum], order='F')
+
+    mask5D = mask_ravel_rep_sub.reshape([thalData.shape[0], 
+                                         thalData.shape[1], 
+                                         thalData.shape[2], 
+                                         componentNum, 
+                                         subjectNum], order='F')
     
-    fig, axes = plt.subplots(ncols=4, nrows=2, figsize=(20,5))
-    [a,b,c,d,e,f,g,h,i,j] = axes[0][0].plot(fsl_glm_mat_sub[:,:,0], label='first subject')
-    axes[0][1].plot(fsl_glm_mat_sub[:,:,1], label='second subject')
-    axes[0][2].plot(fsl_glm_mat_sub[:,:,2], label='third subject')
-    axes[0][3].plot(fsl_glm_mat_sub[:,:,3], label='fourth subject')
-
-    plt.legend([a,b,c,d,e,f,g,h,i,j], ['1','2','3','4','5','6','7','8','9','10'], loc=1)
-
-    axes[1][0].imshow(mask5D[15:75, 40:75, 35, 4, 0], label='first subject, first component')
-    axes[1][1].imshow(mask5D[15:75, 40:75, 40, 4, 0], label='first subject, second component')
-    axes[1][2].imshow(mask5D[15:75, 40:75, 45, 4, 0], label='second subject, first component')
-    axes[1][3].imshow(mask5D[15:75, 40:75, 50, 4, 0], label='second subject, second component')
-
+    draw_max_segmentation(fsl_glm_mat_sub, thalData, thalInd)
 
     #plt.savefig('prac_thal.png')
 
@@ -222,12 +205,94 @@ def postMelodic(melodicDir):
     # from the samples in the same component
     #sumMap = stats.zscore(sumMap, axis=1)
 
-
     # Make graph
     #graph(icMap_nb, sumMap, thalamus.affine)
 
     #img = nb.Nifti1Image(sumMap, thalamus.affine)
     #img.to_filename('sum_IC.nii.gz'.format(num))
+
+def get_cmap(N):
+    '''Returns a function that maps each index in 0, 1, ... N-1 to a distinct 
+    RGB color.'''
+    color_norm  = colors.Normalize(vmin=0, vmax=N-1)
+    scalar_map = cmx.ScalarMappable(norm=color_norm, cmap='hsv') 
+    def map_index_to_rgb_color(index):
+        return scalar_map.to_rgba(index)
+    return map_index_to_rgb_color
+
+def draw_max_segmentation(mat, thalData, thalInd):
+    icNum = mat.shape[1]
+    compMax = mat.mean(axis=2).argmax(axis=1)
+    threeDmap = np.zeros_like(thalData).ravel()
+    threeDmap[thalInd] = compMax[:]
+    threeDmap = threeDmap.reshape([thalData.shape[0], 
+                                   thalData.shape[1], 
+                                   thalData.shape[2]], order='F')
+
+    fig = plt.figure(figsize=(20,15))
+    gs = gridspec.GridSpec(4,5)
+    ax = plt.subplot(gs[0,:])
+    ax1 = plt.subplot(gs[1,0])
+    ax2 = plt.subplot(gs[1,1])
+    ax3 = plt.subplot(gs[1,2])
+    ax4 = plt.subplot(gs[1,3])
+    ax5 = plt.subplot(gs[1,4])
+    ax6 = plt.subplot(gs[2,0])
+    ax7 = plt.subplot(gs[2,1])
+    ax8 = plt.subplot(gs[2,2])
+    ax9 = plt.subplot(gs[2,3])
+    ax10 = plt.subplot(gs[2,4])
+
+    baxes = [ax1, ax2, ax3, ax4, ax5, 
+             ax6, ax7, ax8, ax9, ax10]
+
+    cmaps=get_cmap(icNum+1)
+    cmap_dict = {}
+    cmap_dict[0]= 'white'
+    for compNum in range(1, icNum+1):
+        col = cmaps(compNum)
+        cmap_dict[compNum] = col
+
+    comp_count = {}
+    for voxelNum, value in enumerate(compMax):
+        col = cmap_dict[value+1]
+        rect = plt.Rectangle((voxelNum, -0.5), 1, 1, facecolor=col)
+        ax.add_artist(rect)
+
+        try:
+            comp_count[value+1]+=1
+        except:
+            comp_count[value+1]=1
+
+    # Brain
+    vmax=3
+    cmaps = colors.LinearSegmentedColormap.from_list('hsv', 
+                                                     [(compNum/(icNum), col) for compNum,col in cmap_dict.iteritems()],
+                                                     N=icNum)
+    startSlice=35
+    for axNum in range(10):
+        #s = baxes[axNum].imshow(np.flipud(threeDmap[15:75, 40:75, startSlice].T),
+                                #cmap = cmaps)
+        s = baxes[axNum].imshow(np.flipud(threeDmap[15:75, 40:75, startSlice].T))
+        
+        baxes[axNum].set_title(startSlice)
+        baxes[axNum].axes.yaxis.set_ticklabels([])
+        baxes[axNum].axes.xaxis.set_ticklabels([])
+        startSlice+=1
+
+    #legend
+    patches = [mpatches.Patch(color=cmap_dict[x], 
+    label='Component {0} : {1} voxels'.format(x,comp_count[x])) for x in range(1, icNum+1)]
+    plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=3, borderaxespad=0.)
+
+    ax.set_title('Assigning each thalamic voxel with the strongest ICA component', 
+    fontsize=20)
+    ax.set_xlim(0,len(compMax))
+    ax.set_xlabel('Thalamic voxels in order')
+    ax.set_ylim(0,0.5)
+    ax.axes.yaxis.set_ticklabels([])
+    plt.savefig('max_segmentation.png')
+    #fig.show()
 
 def read_glm_outputs(num):
     # read output from the fsl_glm
@@ -270,12 +335,13 @@ def postMelodic_pre(melodicDir):
 
     # Load coordinate information to save results
     print('\tLoading thalamic coordinate')
-    probtrackx_dir = '/Volume/CCNC_W1_2T/2017_CHR_thalamus_microstructure_kcho/allData/CHR04_PJH/thalamus_tractography_MNI/left'
-    coords_file = join(probtrackx_dir, 'tract_space_coords_for_fdt_matrix2')
-    coord = np.loadtxt(coords_file, dtype='int')
-    thalInd = np.ravel_multi_index((thalNZ[0],thalNZ[1],thalNZ[2]),
-                               dims=thalData.shape, 
-                               order='F')
+    thalInd = np.ravel_multi_index((thalNZ[0],
+                                    thalNZ[1],
+                                    thalNZ[2]), dims=thalData.shape, order='F')
+    #probtrackx_dir = '/Volume/CCNC_W1_2T/2017_CHR_thalamus_microstructure_kcho/allData/CHR04_PJH/thalamus_tractography_MNI/left'
+    #coords_file = join(probtrackx_dir, 'tract_space_coords_for_fdt_matrix2')
+    #coord = np.loadtxt(coords_file, dtype='int')
+
 
     # ravel mask map
     mask_ravel = np.zeros_like(thalData).ravel()
