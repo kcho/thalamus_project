@@ -25,9 +25,8 @@ from copy import copy
 
 
 #def graph(melodic_ICf, meanMapD):
-def graph(icMap_nb, sumMap, affine):
-    mni = '/usr/share/fsl/5.0/data/standard/MNI152_T1_2mm_brain.nii.gz'
-    mni_data = nb.load(mni).get_data()
+def graph(icMap_nb, sumMap, affine, mniLoc):
+    mni_data = nb.load(mniLoc).get_data()
 
     my_cmap = copy(matplotlib.cm.get_cmap('jet')) # make a copy so we don't mess up system copy
     my_cmap.set_under('r', alpha=0) # make locations over vmax translucent red
@@ -121,16 +120,15 @@ def postMelodic(melodicDir):
     componentNum = icMap_nb.shape[3]
 
     voxSize = icMap_nb.header.get_zooms()[0]
-    if zooms[0] == 4:
+    if voxSize == 4:
         mniLoc = '/Volume/CCNC_W1_2T/2017_CHR_thalamus_microstructure_kcho/allData/scripts/MNI152_T1_2mm_ds_mask.nii.gz'
         thalamusLoc = '/Volume/CCNC_W1_2T/2017_CHR_thalamus_microstructure_kcho/allData/scripts/lh_thalamus_HOSC_60_ds.nii.gz'
-    elif zooms[0] == 3:
+    elif voxSize == 3:
         mniLoc = '/Volume/CCNC_W1_2T/2017_CHR_thalamus_microstructure_kcho/allData/scripts/MNI152_T1_2mm_ds_3_mask.nii.gz'
         thalamusLoc = '/Volume/CCNC_W1_2T/2017_CHR_thalamus_microstructure_kcho/allData/scripts/lh_thalamus_HOSC_60_ds_3.nii.gz'
     else:
         mniLoc = '/usr/share/fsl/5.0/data/standard/MNI152_T1_2mm.nii.gz'
         thalamusLoc = '/Volume/CCNC_W1_2T/2017_CHR_thalamus_microstructure_kcho/allData/scripts/lh_thalamus_HOSC_60.nii.gz'
-
 
     # Loading thalamic ROI in MNI space 
     print('\tLoading thalamic ROI') 
@@ -226,7 +224,7 @@ def postMelodic(melodicDir):
     #sumMap = stats.zscore(sumMap, axis=1)
 
     # Make graph
-    #graph(icMap_nb, sumMap, thalamus.affine)
+    #graph(icMap_nb, sumMap, thalamus.affine, mniLoc)
 
     #img = nb.Nifti1Image(sumMap, thalamus.affine)
     #img.to_filename('sum_IC.nii.gz'.format(num))
