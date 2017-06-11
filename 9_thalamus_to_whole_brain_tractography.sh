@@ -100,17 +100,19 @@ else
 fi
 
 reconImg=${tractDir_MNI}/${side}/fdt_matrix2_reconstructed.nii.gz
+reconImg_ds_3=${tractDir_MNI}/${side}/fdt_matrix2_reconstructed_ds_3.nii.gz
+reconImg_ds_4=${tractDir_MNI}/${side}/fdt_matrix2_reconstructed_ds_4.nii.gz
 reconImg4s=${tractDir_MNI}/${side}/fdt_matrix2_reconstructed_4s.nii.gz
-reconImg_ds=${tractDir_MNI}/${side}/fdt_matrix2_reconstructed_ds.nii.gz
+reconImg_ds_3_4s=${tractDir_MNI}/${side}/fdt_matrix2_reconstructed_ds_3_4s.nii.gz
 
 # probtracks postprocessing
-if [ ! -e ${reconImg} ]
-then 
-    echo "Convert ${tractDir_MNI}/${side}/fdt_matrix2 --> ${i}"
-    python tracktography/postprocessing/probtrackx_postprocessing.py \
-        -i ${tractDir_MNI}/${side}
-        #${FSLDIR}/data/standard/MNI152_T1_2mm_brain_mask.nii.gz
-fi
+#if [ ! -e ${reconImg} ]
+#then 
+    #echo "Convert ${tractDir_MNI}/${side}/fdt_matrix2 --> ${i}"
+    #python tracktography/postprocessing/probtrackx_postprocessing.py \
+        #-i ${tractDir_MNI}/${side}
+        ##${FSLDIR}/data/standard/MNI152_T1_2mm_brain_mask.nii.gz
+#fi
 
 ## smoothing
 fslmaths ${reconImg} -kernel gauss 1.69865806 -fmean ${reconImg4s}
@@ -118,9 +120,23 @@ fslmaths ${reconImg} -kernel gauss 1.69865806 -fmean ${reconImg4s}
 #if [ ! -e ${reconImgMNI_ds} ]
 #then
 #echo 'Downsampling'
+#flirt \
+    #-in ${reconImg} \
+    #-ref ${reconImg} \
+    #-applyisoxfm 4 \
+    #-out ${reconImg_ds_3}
+if [ ! -e ${reconImg_ds_4} ]
+then
+    flirt \
+        -in ${reconImg} \
+        -ref ${reconImg} \
+        -applyisoxfm 3 \
+        -out ${reconImg_ds_4}
+fi
+
 flirt \
-    -in ${reconImg} \
-    -ref ${reconImg} \
-    -applyisoxfm 4 \
-    -out ${reconImg_ds}
+    -in ${reconImg4s} \
+    -ref ${reconImg4s} \
+    -applyisoxfm 3 \
+    -out ${reconImg_ds_3_4s}
 #fi

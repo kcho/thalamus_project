@@ -1,5 +1,5 @@
 #!/ccnc/anaconda2/bin/python
-
+from __future__ import division
 import nibabel as nb
 import multiprocessing
 import numpy as np
@@ -16,7 +16,6 @@ import matplotlib.gridspec as gridspec
 import matplotlib.patches as mpatches
 import matplotlib.cm as cmx
 import matplotlib.colors as colors
-from __future__ import division
 
 
 from nilearn import plotting
@@ -80,8 +79,11 @@ def graph(icMap_nb, sumMap, affine, mniLoc):
 def fslglm(inputList):
     num, imgInput, icMap, melodicDir = inputList
     outDir = join(melodicDir, 'glm_out_dir')
-    if not isdir(outDir):
+
+    try:
         os.mkdir(outDir)
+    except:
+        pass
 
     fsl_reg_out = join(outDir, 'fsl_glm_output_{0}'.format(num))
 
@@ -120,20 +122,20 @@ def postMelodic(melodicDir):
     componentNum = icMap_nb.shape[3]
 
     voxSize = icMap_nb.header.get_zooms()[0]
-    if voxSize == 4:
-        mniLoc = '/Volume/CCNC_W1_2T/2017_CHR_thalamus_microstructure_kcho/allData/scripts/MNI152_T1_2mm_ds_mask.nii.gz'
-        thalamusLoc = '/Volume/CCNC_W1_2T/2017_CHR_thalamus_microstructure_kcho/allData/scripts/lh_thalamus_HOSC_60_ds.nii.gz'
-    elif voxSize == 3:
-        mniLoc = '/Volume/CCNC_W1_2T/2017_CHR_thalamus_microstructure_kcho/allData/scripts/MNI152_T1_2mm_ds_3_mask.nii.gz'
-        thalamusLoc = '/Volume/CCNC_W1_2T/2017_CHR_thalamus_microstructure_kcho/allData/scripts/lh_thalamus_HOSC_60_ds_3.nii.gz'
-    else:
-        mniLoc = '/usr/share/fsl/5.0/data/standard/MNI152_T1_2mm.nii.gz'
-        thalamusLoc = '/Volume/CCNC_W1_2T/2017_CHR_thalamus_microstructure_kcho/allData/scripts/lh_thalamus_HOSC_60.nii.gz'
+    #if voxSize == 4:
+        #mniLoc = '/Volume/CCNC_W1_2T/2017_CHR_thalamus_microstructure_kcho/allData/scripts/MNI152_T1_2mm_ds_mask.nii.gz'
+        #thalamusLoc = '/Volume/CCNC_W1_2T/2017_CHR_thalamus_microstructure_kcho/allData/scripts/lh_thalamus_HOSC_60_ds.nii.gz'
+    #elif voxSize == 3:
+        #mniLoc = '/Volume/CCNC_W1_2T/2017_CHR_thalamus_microstructure_kcho/allData/scripts/MNI152_T1_2mm_ds_3_mask.nii.gz'
+        #thalamusLoc = '/Volume/CCNC_W1_2T/2017_CHR_thalamus_microstructure_kcho/allData/scripts/lh_thalamus_HOSC_60_ds_3.nii.gz'
+    #else:
+    mniLoc = '/usr/share/fsl/5.0/data/standard/MNI152_T1_2mm.nii.gz'
+    thalamusLoc = '/Volume/CCNC_W1_2T/2017_CHR_thalamus_microstructure_kcho/allData/scripts/lh_thalamus_HOSC_60.nii.gz'
 
     # Loading thalamic ROI in MNI space 
     print('\tLoading thalamic ROI') 
 
-    thalamus = nb.load() 
+    thalamus = nb.load(thalamusLoc) 
     thalData = thalamus.get_data() 
     thalNZ = np.nonzero(thalData) 
     thalVoxelNum = len(thalNZ[0]) 
@@ -154,7 +156,36 @@ def postMelodic(melodicDir):
     #      The gamma distribution was thresholded at 
     #     a posterior probability of p < 0.5 
     mmthreshDir = join(melodicDir, 'stats')
-    mmthreshImgs = [join(mmthreshDir, x) for x in os.listdir(mmthreshDir)]
+    mmthreshImgs = [join(mmthreshDir, x) for x in os.listdir(mmthreshDir) if x.startswith('thresh_zstat')]
+
+    # mmthresh to $FSLDIR/data/standard/MNI152_T1_0.5mm
+    for mmthreshImgLoc in mmthreshImgs:
+        ref='$FSLDIR/data/standard/MNI152_T1_0.5mm'
+        mmthreshImg = basename(mmthreshImgLoc)
+        mmthreshNum = re.search('\d', mmthreshImg).group(0)
+        hresOut = join(mmthreshDir, 'hres_{0}.nii.gz'.format(mmthreshNum))
+        overlayOut = join(mmthreshDir, 'overlay_{0}.nii.gz'.format(mmthreshNum))
+        slicerOut = join(mmthreshDir, 'slicer_{0}.ppm'.format(mmthreshNum))
+        imgOut = join(mmthreshDir, '{0}_sliced.png'.format(mmthreshNum))
+        if not isfile(imgOut):
+            command = 'flirt -in {mmthresh} \
+                    -ref {ref} \
+                    -applyxfm -out {hresOut}'.format(
+                        mmthresh = mmthreshLoc, ref = ref, hresOut = hresOut)
+            os.popen(command).read()
+            command = 'overlay 1 0 {ref} \
+                    -A {hresOut} \
+                    2.5 10 {overlayOut}'.format(
+                        ref = ref, hresOut = hresOut, overlayOut = overlayOut)
+            os.popen(command).read()
+            command = 'slicer {overlayOut} \
+                    -s 24 1200 \
+                    {slicerOut}'.format(
+                        overlayOut = overlayOut, slicerOut = slicerOut)
+            os.popen(command).read()
+            command = 'convert {slicerOut} {imgOut}'.format(
+                slicerOut = slicerOut, imgOut = imgOut)
+            os.popen(command).read()
 
     # The contribution of each tractogram to each independent component was converted into a normalised Z statistic, 
     #     (output from fsl_glm for every subjects)
@@ -192,9 +223,11 @@ def postMelodic(melodicDir):
 
     # for each subject, read fsl_glm outputs
     fsl_glm_mat_loc = join(melodicDir, 'fsl_glm_mat_sub.npy')
-    if not os.path.isfile(fsl_glm_mat_loc):
+    if not isfile(fsl_glm_mat_loc):
         for num, imgInput in enumerate(imgInputs):
-            fsl_glm_mat_z = read_glm_outputs(num)
+            fsl_glm_mat_z = read_glm_outputs(melodicDir, num)
+            print(fsl_glm_mat_z.shape)
+            print(fsl_glm_mat_sub.shape)
             fsl_glm_mat_sub[:,:, num] = fsl_glm_mat_z
         np.save(join(melodicDir, 'fsl_glm_mat_sub'), fsl_glm_mat_sub)
     else:
@@ -311,10 +344,10 @@ def draw_max_segmentation(mat, thalData, thalInd):
     plt.savefig('max_segmentation.png')
     #fig.show()
 
-def read_glm_outputs(num):
+def read_glm_outputs(melodicDir, num):
     # read output from the fsl_glm
 
-    fsl_reg_out = 'fsl_glm_output_{0}'.format(num)
+    fsl_reg_out = join(melodicDir, 'glm_out_dir', 'fsl_glm_output_{0}'.format(num))
     fsl_glm_mat = np.loadtxt(fsl_reg_out)
 
     # z-score conversion
