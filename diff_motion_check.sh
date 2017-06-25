@@ -20,6 +20,10 @@ touch ${dir}/grot.mat
 
 firsttime=yes;
 m=1;
+rm ${dir}/ec_disp.txt 
+rm ${dir}/ec_rot.txt
+rm ${dir}/ec_trans.txt
+
 for n in $nums ; do 
     echo "Timepoint $m"
     n1=`echo $n + 1 | bc` ; 
