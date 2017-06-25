@@ -20,9 +20,15 @@ touch ${dir}/grot.mat
 
 firsttime=yes;
 m=1;
-rm ${dir}/ec_disp.txt 
-rm ${dir}/ec_rot.txt
-rm ${dir}/ec_trans.txt
+
+for tmpFile in disp rot trans
+do
+    tmpFileLoc=${dir}/ec_${tmpFile}.txt 
+    if [ -e ${tmpFileLoc} ]
+    then
+        rm ${tmpFileLoc}
+    fi
+done
 
 for n in $nums ; do 
     echo "Timepoint $m"
