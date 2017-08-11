@@ -73,9 +73,38 @@ def roi_check(subjects):
     print gb.count().reset_index().pivot_table(index='roi', columns='cortex')
     print df.groupby('roi').get_group('not_completed').subject.unique()
 
+def reg_check(subjects):
+    print '='*80
+    print 'Registration check'
+    print '='*80
+    df = pd.DataFrame()
+    for subject in subjects:
+        for regMats in ['FREESURFERT1toDKINodif.mat', 
+                        'fs2dki_fnirt_coeff_inv.nii.gz', 
+                        'fs2dti_fnirt_coeff_inv.nii.gz', 
+                        'FREESURFERT1toNodif.mat', 
+                        'fs2dki_fnirt_coeff.nii.gz', 
+                        'fs2dti_fnirt_coeff.nii.gz']:
+            regDir = join(subject, 'registration')
+            regLoc = join(regDir, regMats)
+            if isfile(regLoc):
+                df_subject = pd.DataFrame.from_dict({'subject':[basename(subject)], 
+                                                     'regMats':[regMats],
+                                                     'registration':['completed']})
+            else:
+                df_subject = pd.DataFrame.from_dict({'subject':[basename(subject)], 
+                                                     'regMats':[regMats],
+                                                     'registration':['not_completed']})
+            
+            df = pd.concat([df, df_subject])
+    gb = df.groupby(['regMats', 'registration'])
+    print gb.count().reset_index().pivot_table(index='registration', columns='regMats')
+    print df.groupby('registration').get_group('not_completed').subject.unique()
+
 if __name__=='__main__':
     subjects = [abspath(x) for x in os.listdir(os.getcwd()) \
                 if x.startswith('FEP') or x.startswith('CHR') or x.startswith('NOR')]
     freesurfer_check(subjects)
     tractography_check(subjects)
     roi_check(subjects)
+    reg_check(subjects)
