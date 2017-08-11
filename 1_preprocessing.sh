@@ -1,30 +1,60 @@
 #!/bin/bash
 for subj in $@
 do
-    # edit here for different folder structure
+    # Path variables
+    t1Dir=${subj}/T1
+
+    # Freesurfer
     fsDir=${subj}/FREESURFER
-    regDir=${subj}/registration
+    fsDirName=${fsDir##*/}
+    fsMriDir=${fsDir}/mri
+    fsT1Img=${fsMriDir}/T1.nii.gz
+    fsT1BetImg=${fsMriDir}/brain.nii.gz
+    fsT1MaskImg=${fsMriDir}/brainmask.nii.gz
+    # MNI
+    mni2mmImg=${FSLDIR}/data/standard/MNI152_T1_2mm.nii.gz
+    mni2mmBetImg=${FSLDIR}/data/standard/MNI152_T1_2mm_brain.nii.gz
+    mni2mmMaskImg=${FSLDIR}/data/standard/MNI152_T1_2mm_brain_mask.nii.gz 
+    # DTI
     dtiDir=${subj}/DTI
+    dtiNodifBetImg=${dtiDir}/nodif_brain.nii.gz
+    dtiNodifImg=${dtiDir}/nodif.nii.gz
+    dtiNodifMaskImg=${dtiDir}/nodif_brain_mask.nii.gz 
+    # DKI
     dkiDir=${subj}/DKI
+    dkiNodifBetImg=${dkiDir}/nodif_brain.nii.gz
+    dkiNodifImg=${dkiDir}/nodif.nii.gz
+    dkiNodifMaskImg=${dkiDir}/nodif_brain_mask.nii.gz
+    # other dirs
+    regDir=${subj}/registration
     roiDir=${subj}/ROI
-    segDir=${subj}/segmentation
     bedpostDir=${subj}/DTI.bedpostX
 
-    mni2mm=${FSLDIR}/data/standard/MNI152_T1_2mm_brain.nii.gz
-    mni2mmMask=${FSLDIR}/data/standard/MNI152_T1_2mm_brain_mask.nii.gz
-
-
-    if [ ! -d ${bedpostDir} ]
+    # Recon-all
+    if [ ! -d ${fsDir} ]
     then
-        bedpostx ${dtiDir}
+        export SUBJECTS_DIR=${subj}
+        recon-all \
+            -all \
+            -subjid ${fsDirName} \
+            -i ${t1Dir}/20*.nii.gz
     fi
 
-    # convert the Freesurfer output : brain.mgz --> brain.nii.gz 
-    if [ ! -e ${fsDir}/mri/brain.nii.gz ]
+    # freesurfer mgz --> nii.gz
+    if [ ! -e ${fsT1BetImg} ]
     then
-        mri_convert --out_orientation RAS \
-            ${fsDir}/mri/brain.mgz \
-            ${fsDir}/mri/brain.nii.gz
+        mri_convert --out_orientation RAS ${fsMriDir}/brain.mgz ${fsT1BetImg}
+    fi
+
+    if [ ! -e ${fsT1Img} ]
+    then
+        mri_convert --out_orientation RAS ${fsMriDir}/T1.mgz ${fsT1Img}
+    fi
+
+    if [ ! -e ${fsT1MaskImg} ]
+    then
+        mri_convert --out_orientation RAS ${fsMriDir}/brainmask.mgz ${fsT1MaskImg}
+        fslmaths ${fsT1MaskImg} -bin ${fsT1MaskImg}
     fi
 
     # Registration
@@ -33,15 +63,48 @@ do
         mkdir ${regDir}
     fi
 
-    # FREESURFER output T1 --> diffusion tensor space
-    fs2nodifMat=${regDir}/FREESURFERT1toNodif.mat
-    if [ ! -e ${fs2nodifMat} ]
+    # flirt : freesurfer --> DTI/nodif_brain.nii.gz
+    fs2dti=${regDir}/fs2dti.mat
+    if [ ! -e ${fs2dti} ]
     then
         flirt \
-            -in ${fsDir}/mri/brain.nii.gz \
-            -ref ${dtiDir}/nodif_brain.nii.gz \
-            -out ${regDir}/FREESURFERT1toNodif \
-            -omat ${fs2nodifMat} \
+            -in ${fsT1BetImg} \
+            -ref ${dtiNodifBetImg} \
+            -omat ${fs2dti} \
+            -bins 256 -cost mutualinfo \
+            -searchrx -180 180 -searchry -180 180 -searchrz -180 180 \
+            -dof 6  -interp trilinear
+    fi
+    # fnirt : freesurfer nobet T1 --> DTI/nodif.nii.gz
+    fs2dti_fnirt=${regDir}/fs2dti_fnirt_coeff.nii.gz
+    fs2dti_fnirt_inv=${regDir}/fs2dti_fnirt_coeff_inv.nii.gz
+    if [ ! -e ${fs2dti_fnirt} ]
+    then
+        fnirt \
+            --ref=${dtiNodifImg} \
+            --in=${fsT1Img} \
+            --aff=${fs2dti} \
+            --inmask=${fsT1MaskImg} \
+            --refmask=${dtiNodifMaskImg} \
+            --cout=${fs2dti_fnirt}
+    fi
+
+    if [ ! -e ${fs2dti_fnirt_inv} ]
+    then
+        invwarp \
+            -w ${fs2dti_fnirt} \
+            -o ${fs2dti_fnirt_inv} \
+            -r ${fsT1Img}
+    fi
+
+    # flirt : freesurfer --> DKI/nodif_brain.nii.gz
+    fs2dki=${regDir}/fs2dki.mat
+    if [ ! -e ${fs2dki} ]
+    then
+        flirt \
+            -in ${fsT1BetImg} \
+            -ref ${dkiNodifBetImg} \
+            -omat ${fs2dki} \
             -bins 256 \
             -cost mutualinfo \
             -searchrx -180 180 \
@@ -50,108 +113,80 @@ do
             -dof 6  -interp trilinear
     fi
 
-    # FREESURFER output T1 --> diffusion kurtosis space
-    fs2dkinodifMat=${regDir}/FREESURFERT1toDKINodif.mat
-    if [ ! -e ${fs2dkinodifMat} ]
+    # FREESURFER output t1 --> diffusion kurtosis space fnirt
+    fs2dki_fnirt=${regDir}/fs2dki_fnirt_coeff.nii.gz
+    fs2dki_fnirt_inv=${regDir}/fs2dki_fnirt_coeff_inv.nii.gz
+    if [ ! -e ${fs2dki_fnirt} ]
     then
-        flirt \
-            -in ${fsDir}/mri/brain.nii.gz \
-            -ref ${dkiDir}/nodif_brain.nii.gz \
-            -out ${regDir}/FREESURFERT1toDKINodif \
-            -omat ${fs2dkinodifMat} \
-            -bins 256 \
-            -cost mutualinfo \
-            -searchrx -180 180 \
-            -searchry -180 180 \
-            -searchrz -180 180 \
-            -dof 6  -interp trilinear
+        fnirt \
+            --ref=${dkiNodifImg} \
+            --in=${fsT1Img} \
+            --aff=${fs2dki} \
+            --inmask=${fsT1MaskImg} \
+            --refmask=${dkiNodifMaskImg} \
+            --cout=${fs2dki_fnirt}
+    fi
+
+    if [ ! -e ${fs2dki_fnirt_inv} ]
+    then
+        invwarp \
+            -w ${fs2dki_fnirt} \
+            -o ${fs2dki_fnirt_inv} \
+            -r ${fsT1Img}
     fi
 
     # MNI 2mm --> FREESURFER output T1 
-    mni2fs=${regDir}/MNItoFREESURFER.mat
+    mni2fs=${regDir}/mni2fs.mat
     if [ ! -e ${mni2fs} ]
     then
         flirt \
-            -in ${mni2mm} \
-            -ref ${fsDir}/mri/brain.nii.gz \
-            -out ${regDir}/MNItoFREESURFER \
+            -in ${mni2mmImg} \
+            -ref ${fsT1BetImg} \
             -omat ${mni2fs} \
-            -bins 256 \
-            -cost mutualinfo \
-            -searchrx -180 180 \
-            -searchry -180 180 \
-            -searchrz -180 180 \
-            -dof 6  -interp trilinear
+            -bins 256 -cost mutualinfo -searchrx -180 180 -searchry -180 180 -searchrz -180 180 \
+            -dof 12 -interp trilinear
     fi
-
-    #============================================================
-    # FNIRT MNI --> Freesurfer
-    #============================================================
-    mni2fs_fnirt=${regDir}/MNI_to_FREESURFER_fnirt_coeff.nii.gz
-    echo flirt 
+    mni2fs_fnirt=${regDir}/mni2fs_fnirt_coeff.nii.gz
     if [ ! -e ${mni2fs_fnirt} ]
     then
         fnirt \
-            --ref=${fsDir}/mri/brain.nii.gz \
-            --in=${mni2mm} \
+            --ref=${fsT1BetImg} \
+            --in=${mni2mmImg} \
             --aff=${mni2fs} \
-            --inmask=${mni2mmMask} \
-            --refmask=${fsDir}/mri/brainmask.nii.gz \
-            --iout=${regDir}/MNI_to_FREESURFER_fnirt \
+            --inmask=${mni2mmMaskImg} \
+            --refmask=${fsT1MaskImg} \
             --cout=${mni2fs_fnirt}
     fi
-    
     # MNI --fnirt--> Freesurfer --flirt--> nodif
-    mni2fs2nodif=${regDir}/MNI_to_FREESURFER_fnirt_to_Nodif_flirt.nii.gz
+    mni2fs2nodif=${regDir}/mni2fs2nodif_coeff.nii.gz
     if [ ! -e ${mni2fs2nodif} ]
     then
         convertwarp \
-            --ref=${dtiDir}/nodif_brain_mask.nii.gz \
+            --ref=${dtiNodifMaskImg} \
             --warp1=${mni2fs_fnirt} \
             --postmat=${fs2nodifMat} \
             --out=${mni2fs2nodif}
     fi
 
     # nodif --flirt--> Freesurfer --fnirt--> MNI
-    nodif2fs2mni=${regDir}/Nodif_to_FREESURFER_flirt_to_MNI_fnirt.nii.gz
+    nodif2fs2mni=${regDir}/nodif2fs2mni_coeff.nii.gz
     if [ ! -e ${nodif2fs2mni} ]
     then
         invwarp \
-            --ref=${mni2mm} \
+            --ref=${mni2mmBetImg} \
             --warp=${mni2fs2nodif} \
             --out=${nodif2fs2mni}
     fi
 
     # Check ouput image
-    mni2nodif_fnfl_img=${regDir}/MNI_in_Nodif_FNIRT_FLIRT.nii.gz
-    if [ ! -e ${mni2nodif_fnfl_img} ]
+    mni2nodif_img=${regDir}/mni2nodif_img.nii.gz
+    if [ ! -e ${mni2nodif_img} ]
     then
         applywarp \
-            --ref=${dtiDir}/nodif_brain_mask.nii.gz \
-            --in=${mni2mm} \
+            --ref=${dtiNodifMaskImg} \
+            --in=${mni2mmBetImg} \
             --warp=${mni2fs2nodif} \
-            --out=${mni2nodif_fnfl_img}
-    fi
-
-    # Estimation of transformation matrix
-    # - MNI to DTI
-    # - This is more accurately done by going through DTI --> FREESURFER output T1 --> MNI 1mm
-    # Usage: convert_xfm [options] <input-matrix-filename>
-    # e.g. convert_xfm -omat <outmat> -inverse <inmat>
-    #        convert_xfm -omat <outmat_AtoC> -concat <mat_BtoC> <mat_AtoB>
-
-    # MNI --> FREESURFER --> DTI
-    if [ ! -e ${regDir}/MNItoNodif.mat ]
-    then
-        convert_xfm -omat ${regDir}/MNItoNodif.mat \
-            -concat ${fs2nodifMat} ${mni2fs}
-    fi
-
-    # MNI --> FREESURFER --> DTI
-    if [ ! -e ${regDir}/nodifToMNI.mat ]
-    then
-        convert_xfm -omat ${regDir}/nodifToMNI.mat \
-            -inverse ${regDir}/MNItoNodif.mat
+            --out=${mni2nodif_img}
     fi
 
     # ROI extraction
@@ -168,5 +203,10 @@ do
             -f `basename ${fsDir}`
     else
         echo ${subj} 'ROI extraction done'
+    fi
+
+    if [ ! -d ${bedpostDir} ]
+    then
+        bedpostx ${dtiDir}
     fi
 done
