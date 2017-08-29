@@ -43,18 +43,29 @@ do
     # freesurfer mgz --> nii.gz
     if [ ! -e ${fsT1BetImg} ]
     then
-        mri_convert --out_orientation RAS ${fsMriDir}/brain.mgz ${fsT1BetImg}
+        mri_convert \
+            --out_orientation RAS \
+            ${fsMriDir}/brain.mgz \
+            ${fsT1BetImg}
     fi
 
     if [ ! -e ${fsT1Img} ]
     then
-        mri_convert --out_orientation RAS ${fsMriDir}/T1.mgz ${fsT1Img}
+        mri_convert \
+            --out_orientation RAS \
+            ${fsMriDir}/T1.mgz \
+            ${fsT1Img}
     fi
 
     if [ ! -e ${fsT1MaskImg} ]
     then
-        mri_convert --out_orientation RAS ${fsMriDir}/brainmask.mgz ${fsT1MaskImg}
-        fslmaths ${fsT1MaskImg} -bin ${fsT1MaskImg}
+        mri_convert \
+            --out_orientation RAS \
+            ${fsMriDir}/brainmask.mgz \
+            ${fsT1MaskImg}
+        fslmaths \
+            ${fsT1MaskImg} \
+            -bin ${fsT1MaskImg}
     fi
 
     # Registration
@@ -71,10 +82,14 @@ do
             -in ${fsT1BetImg} \
             -ref ${dtiNodifBetImg} \
             -omat ${fs2dti} \
-            -bins 256 -cost mutualinfo \
-            -searchrx -180 180 -searchry -180 180 -searchrz -180 180 \
+            -bins 256 \
+            -cost mutualinfo \
+            -searchrx -180 180 \
+            -searchry -180 180 \
+            -searchrz -180 180 \
             -dof 6  -interp trilinear
     fi
+
     # fnirt : freesurfer nobet T1 --> DTI/nodif.nii.gz
     fs2dti_fnirt=${regDir}/fs2dti_fnirt_coeff.nii.gz
     fs2dti_fnirt_inv=${regDir}/fs2dti_fnirt_coeff_inv.nii.gz
@@ -143,7 +158,11 @@ do
             -in ${mni2mmImg} \
             -ref ${fsT1BetImg} \
             -omat ${mni2fs} \
-            -bins 256 -cost mutualinfo -searchrx -180 180 -searchry -180 180 -searchrz -180 180 \
+            -bins 256 \
+            -cost mutualinfo \
+            -searchrx -180 180 \
+            -searchry -180 180 \
+            -searchrz -180 180 \
             -dof 12 -interp trilinear
     fi
     mni2fs_fnirt=${regDir}/mni2fs_fnirt_coeff.nii.gz
@@ -152,6 +171,7 @@ do
         fnirt \
             --ref=${fsT1BetImg} \
             --in=${mni2mmImg} \
+            --config=T1_2_MNI152_2mm \
             --aff=${mni2fs} \
             --inmask=${mni2mmMaskImg} \
             --refmask=${fsT1MaskImg} \
