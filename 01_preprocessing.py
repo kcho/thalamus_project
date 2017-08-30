@@ -1,5 +1,5 @@
 import os
-from os.path import join, basename, dirname, isfile, isdir
+from os.path import join, isfile, isdir
 from glob import glob
 import re
 from nipype.interfaces import fsl
@@ -290,8 +290,8 @@ class subject:
         self.mni2fs2dti = join(self.regDir, 'mni2fs2dti_coeff.nii.gz')
         self.dti2fs2mni = join(self.regDir, 'dti2fs2mni_coeff.nii.gz')
 
-        self.dti_nodif2mni_check = join(self.regDir,
-                                    'nodif2mni_check.nii.gz')
+        self.dti_nodif2mni_check = join(self.regDir, 
+                                        'nodif2mni_check.nii.gz')
 
 if __name__ == '__main__':
     print(sys.argv[1])
