@@ -220,10 +220,6 @@ class thalamus_subject(thalamus_subject):
             command = 'bedpostx {}'.format(self.dtiDir)
             os.popen(command).read()
 
-    def run_thalamo_wb_tractography(self, sside):
-        command = 'bash thalamus_to_whole_brain_tractography.sh {} {}'.format(self.dir, sside)
-        os.popen(command).read()
-
 if __name__ == '__main__':
     print(sys.argv[1])
     f = thalamus_subject(sys.argv[1])
@@ -241,11 +237,4 @@ if __name__ == '__main__':
     f.visual_check_nodif_to_mni()
 
     roiExtraction(f.dir, 'ROI', f.fsDir)
-
     f.run_bedpostx()
-
-    f.run_thalamo_wb_tractography('lh')
-    f.run_thalamo_wb_tractography('rh')
-
-
-

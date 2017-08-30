@@ -86,3 +86,8 @@ class thalamus_subject:
 
         self.dti_nodif2mni_check = join(self.regDir, 
                                         'dti_nodif2mni_check.nii.gz')
+
+
+
+        self.bedpostxDir = join(subjDir, 'DTI.bedpostX')
+
