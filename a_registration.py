@@ -64,7 +64,7 @@ class thalamus_subject(thalamus_subject):
         if not isdir(self.fsDir):
             ReconAll(subject_id = 'FREESURFER',
                      directive = 'all',
-                     subjects_dir = subjDir,
+                     subjects_dir = self.dir,
                      T1_files = self.t1raw).run()
 
     def convert_mgzs_into_niftis(self):

@@ -38,7 +38,7 @@ class thalamus_subject:
 
         self.dir = subjDir
         self.t1Dir = join(subjDir, 'T1')
-        self.t1raw = self.get_img_raw(self.t1Dir)
+        self.t1raw = join(self.t1Dir, self.get_img_raw(self.t1Dir))
         self.fsDir = join(subjDir, 'FREESURFER')
 
         self.fsMriDir = join(self.fsDir, 'mri')
