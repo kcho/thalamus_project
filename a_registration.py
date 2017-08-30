@@ -230,3 +230,9 @@ if __name__ == '__main__':
     f.mni_to_fs_to_dti_convwarp()
     f.dti_to_fs_to_mni_from_invwarp()
     f.visual_check_nodif_to_mni()
+
+    roiExtraction(f.dir, 'ROI', f.fsDir)
+
+
+
+
