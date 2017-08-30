@@ -1,4 +1,119 @@
-#!/bin/bash
+import os
+from os import join, basename, dirname, isfile, isdir
+from glob import glob
+import re
+from nipype.interfaces import fsl
+from nipype.interfaces.freesurfer import ReconAll, MRIConvert
+import sys
+
+def run_reconall(subjDir, t1_location):
+    res = ReconAll(subject_id = 'FREESURFER',
+                   directive = 'all',
+                   subjects_dir = subjDir,
+                   T1_files = t1_location).run()
+    reconall.run()
+
+def mgz_to_nifti(mgz_location, Mask=False):
+    outfile = re.sub('.mgz$', '.nii.gz$', mgz_location)
+
+    res = MRIConvert(in_file = mgz_location,
+                           out_file = outfile,
+                           out_type = 'nii.gz',
+                           out_orientation = 'RAS').run()
+
+    if Mask:
+        command = 'fslmaths {imgInput} -bin {imgOutput}'.format(
+            imgInput = outfile,
+            imgOutput = outfile)
+        os.popen(command).read()
+
+def flirt_within_subject(img, ref, omat):
+    flt = fsl.FLIRT(bins=256, 
+                    cost_func='mutualinfo',
+                    searchrx=[-180, 180],
+                    searchry=[-180, 180],
+                    searchrz=[-180, 180],
+                    dof=6,
+                    interp='trilinear',
+                    in_file=img,
+                    reference=ref,
+                    out_matrix_file=omat)
+    flt.run()
+    
+def fnirt(img, ref, aff, out, inmask, refmask, mni=False):
+    frt = fsl.FNIRT(in_file=img,
+                    ref_file=ref,
+                    affine_file=aff, 
+                    inmask_file=inmask, 
+                    refmask_file=refmask,
+                    fieldcoeff_file=out)
+
+    if mni:
+        frt.inputs.config_file='T1_2_MNI152_2mm'
+
+    frt.run()
+
+def preprocessing(subjDir):
+    raw_t1_location = join(subjDir, 'T1', 'T1.nii.gz')
+    run_reconall(subjDir, raw_t1_location)
+    
+    mgz_imgs_to_convert = ['brain', 'T1', 'brainmask']
+    mgz_imgs_loc = [join(subjDir, 'FREESURFER', 'mri', x+'.mgz') for x in mgz_imgs_to_convert]
+    for mgz_img in mgz_imgs_loc:
+        if 'mask' in mgz_img:
+            mgz_to_nifti(mgz_img, Mask=True)
+        else:
+            mgz_to_nifti(mgz_img)
+
+
+    regDir = join(subjDir, 'registration')
+    if not isdir(regDir):
+        os.mkdir(regDir)
+
+    # DTI / DKI flirt
+    fsDir = join(subjDir, 'FREESURFER', 'mri')
+    fs_t1 = join(fsDir, 'T1.nii.gz')
+    fs_t1_mask = join(fsDir, 'brainmask.nii.gz')
+    dtiDir = join(subjDir, 'DTI')
+    dkiDir = join(subjDir, 'DKI')
+    dti_nodif_brain = join(dtiDir, 'nodif_brain.nii.gz')
+    dki_nodif_brain = join(dkiDir, 'nodif_brain.nii.gz')
+
+    fs2dti=join(regDir, 'fs2dti.mat')
+    fs2dki=join(regDir, 'fs2dki.mat')
+
+    flirt_within_subject(dti_nodif_brain, fs_t1, fs2dti)
+    flirt_within_subject(dki_nodif_brain, fs_t1, fs2dki)
+
+    fs2dti_fnirt=join(regDir, 'fs2dti_coeff.nii.gz')
+    fs2dki_fnirt=join(regDir, 'fs2dki_coeff.nii.gz')
+    fnirt(dti_nodif_brain, fs_t1, fs2dti, d
+
+
+    fs2dki_fnirt_inv=join(regDir, 'fs2dki_coeff_inv.nii.gz')
+
+    
+
+    
+def fnirt(img, ref, aff, out, inmask, refmask, mni=False):
+    invwarp = InvWarp(warp=fnirt_out, 
+                      reference=ref,
+                     inverse_warp=out)
+    invwarp.run()
+
+
+    convwarp = ConvertWarp(warp1=inv_out,
+                           reference=ref,
+                           postmat=postmat,
+                           out_file=out)
+    convwarp.run()
+
+    applywarp = ApplyWarp(in_file=in_img,
+                          ref_file=ref,
+                          field_file=warp,
+                          out_file=out)
+    applywarp.run()
+
 for subj in $@
 do
     # Path variables
@@ -30,15 +145,6 @@ do
     roiDir=${subj}/ROI
     bedpostDir=${subj}/DTI.bedpostX
 
-    # Recon-all
-    if [ ! -d ${fsDir} ]
-    then
-        export SUBJECTS_DIR=${subj}
-        recon-all \
-            -all \
-            -subjid ${fsDirName} \
-            -i ${t1Dir}/20*.nii.gz
-    fi
 
     # freesurfer mgz --> nii.gz
     if [ ! -e ${fsT1BetImg} ]
@@ -230,3 +336,6 @@ do
         bedpostx ${dtiDir}
     fi
 done
+
+if __name__=='__main__':
+    preprocessing(sys.argv[1])
