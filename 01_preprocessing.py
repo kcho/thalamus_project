@@ -6,26 +6,215 @@ from nipype.interfaces import fsl
 from nipype.interfaces.freesurfer import ReconAll, MRIConvert
 import sys
 
-def run_reconall(subjDir, t1_location):
-    res = ReconAll(subject_id = 'FREESURFER',
-                   directive = 'all',
-                   subjects_dir = subjDir,
-                   T1_files = t1_location).run()
-    reconall.run()
 
-def mgz_to_nifti(mgz_location, Mask=False):
-    outfile = re.sub('.mgz$', '.nii.gz$', mgz_location)
+class subject(subjDir):
+    def get_img_raw(t1Dir):
+        file_list = os.listdir(t1Dir)
+        co_list = [x for x in file_list if re.search('^20.*\.nii\.gz$', x)]
+        if len(co_list)==1:
+            return co_list[0]
+        else,
+            return 'No T1 images'
 
-    res = MRIConvert(in_file = mgz_location,
-                           out_file = outfile,
-                           out_type = 'nii.gz',
-                           out_orientation = 'RAS').run()
+    def __init__(self):
+        fsldir = os.environ['FSLDIR']
+        fslstandard = join(fsldir, 'data', 'standard')
+        self.mni = join(fslstandard, 'MNI152_T1_2mm.nii.gz')
+        self.mni_brain = join(fslstandard, 'MNI152_T1_2mm_brain.nii.gz')
+        self.mni_brain_mask = join(fslstandard, 'MNI152_T1_2mm_brain_mask.nii.gz')
 
-    if Mask:
-        command = 'fslmaths {imgInput} -bin {imgOutput}'.format(
-            imgInput = outfile,
-            imgOutput = outfile)
-        os.popen(command).read()
+        self.dir = subjDir
+        self.t1Dir = subjDir(subjDir, 'T1')
+        self.t1raw = get_img_raw(self.t1Dir)
+        self.fsDir = join(subjDir, 'FREESURFER')
+
+        if not isdir(self.fsDir):
+            ReconAll(subject_id = 'FREESURFER',
+                     directive = 'all',
+                     subjects_dir = subjDir,
+                     T1_files = self.t1raw).run()
+
+        self.fsMriDir = join(self.fsDir, 'mri')
+        self.fs_t1_mgz = join(self.fsMriDir, 'T1.mgz')
+        self.fs_t1 = join(self.fsMriDir, 'T1.nii.gz')
+        if not isfile(self.fs_t1):
+            freesurfer.MRIConvert(in_file=self.fs_t1_mgz,
+                                  out_file=self.fs_t1,
+                                  out_type='nii.gz',
+                                  out_orientation='RAS').run()
+        self.fs_t1_brain_mgz = join(self.fsMriDir, 'brain.mgz')
+        self.fs_t1_brain = join(self.fsMriDir, 'brain.nii.gz')
+        if not isfile(self.fs_t1_brain):
+            freesurfer.MRIConvert(in_file=self.fs_t1_brain_mgz,
+                                  out_file=self.fs_t1_brain,
+                                  out_type='nii.gz',
+                                  out_orientation='RAS').run()
+
+        self.fs_t1_brain_mask_mgz = join(self.fsMriDir, 'brainmask.mgz')
+        self.fs_t1_brain_mask = join(self.fsMriDir, 'brainmask.nii.gz')
+        if not isfile(self.fs_t1_brain_mask):
+            freesurfer.MRIConvert(in_file=self.fs_t1_brain_mask_mgz,
+                                  out_file=self.fs_t1_brain_mask,
+                                  out_type='nii.gz',
+                                  out_orientation='RAS').run()
+            command = 'fslmaths {imgInput} -bin {imgOutput}'.format(
+                imgInput = self.fs_t1_brain_mask,
+                imgOutput = self.fs_t1_brain_mask)
+            os.popen(command).read()
+
+        self.dtiDir = join(subjDir, 'DTI')
+        self.nodif_number = 0
+        self.dtiraw = get_img_raw(self.dtiDir)
+        self.dti_eddy_out = join(self.dtiDir, 'data.nii.gz')
+        self.dti_nodif = join(self.dtiDir, 'nodif.nii.gz')
+        self.dti_nodif_brain = join(self.dtiDir, 'nodif_brain.nii.gz')
+        self.dti_nodif_brain_mask = join(self.dtiDir, 'nodif_brain_mask.nii.gz')
+
+        if not isfile(self.dti_eddy_out):
+            fsl.EddyCorrect(in_file=self.dtiraw, 
+                            out_file=self.dti_eddy_out).run()
+
+        if not isfile(self.dti_nodif):
+            fsl.ExtractROI(in_file=self.dti_eddy_out,
+                           t_min=self.nodif_number,
+                           t_size=1,
+                           roi_file=self.dti_nodif).run()
+
+        if not isfile(self.nodif_brain):
+            fsl.Bet(in_file = self.nodif,
+                    frac = 0.3,
+                    mask = True,
+                    out_file = self.nodif_brain).run()
+
+        self.dkiDir = join(subjDir, 'DKI')
+        self.nodif_number = 0
+        self.dkiraw = get_img_raw(self.dkiDir)
+        self.dki_eddy_out = join(self.dkiDir, 'data.nii.gz')
+        self.dki_nodif = join(self.dkiDir, 'nodif.nii.gz')
+        self.dki_nodif_brain = join(self.dkiDir, 'nodif_brain.nii.gz')
+        self.dki_nodif_brain_mask = join(self.dkiDir, 'nodif_brain_mask.nii.gz')
+
+        if not isfile(self.dki_eddy_out):
+            fsl.EddyCorrect(in_file=self.dkiraw, 
+                            out_file=self.dki_eddy_out).run()
+
+        if not isfile(self.dki_nodif):
+            fsl.ExtractROI(in_file=self.dki_eddy_out,
+                           t_min=self.nodif_number,
+                           t_size=1,
+                           roi_file=self.dki_nodif).run()
+
+        if not isfile(self.nodif_brain):
+            fsl.Bet(in_file = self.nodif,
+                    frac = 0.3,
+                    mask = True,
+                    out_file = self.nodif_brain).run()
+
+        self.regDir = join(subjDir, 'registration')
+        if not isdir(self.regDir):
+            os.mkdir(self.regDir)
+
+        self.fs2dti_mat = join(self.regDir, 'fs2dti.mat')
+        if not isfile(self.fs2dti_mat):
+            flirt_within_subject(self.dti_nodif_brain, 
+                                 self.fs_t1_brain, 
+                                 self.fs2dti_mat)
+
+        self.fs2dki_mat = join(self.regDir, 'fs2dki.mat')
+        if not isfile(self.fs2dki_mat):
+            flirt_within_subject(self.dki_nodif_brain, 
+                                 self.fs_t1_brain, 
+                                 self.fs2dki_mat)
+
+        self.fs2dti_coeff = join(self.regDir, 'fs2dti_coeff.nii.gz')
+        if not isfile(self.fs2dti_coeff):
+            fnirt(self.fs_t1,
+                  self.dti_nodif, 
+                  self.fs2dti_mat, 
+                  self.fs2dti_coeff,
+                  self.fs_t1_brain_mask,
+                  self.dti_nodif_brain_mask,
+                  mni=False)
+        self.fs2dki_coeff = join(self.regDir, 'fs2dki_coeff.nii.gz')
+        if not isfile(self.fs2dki_coeff):
+            fnirt(self.fs_t1,
+                  self.dki_nodif, 
+                  self.fs2dki_mat, 
+                  self.fs2dki_coeff,
+                  self.fs_t1_brain_mask,
+                  self.dki_nodif_brain_mask,
+                  mni=False)
+        self.dti2fs_coeff = join(self.regDir, 'dti2fs_coeff.nii.gz')
+        if not isfile(self.dti2fs_coeff):
+            fsl.ConvertWarp(warp1=self.fs2dti_coeff,
+                            reference=self.dti_nodif,
+                            postmat=self.fs2dti_mat,
+                            out_file=self.dti2fs_coeff)
+
+        self.dki2fs_coeff = join(self.regDir, 'dki2fs_coeff.nii.gz')
+        if not isfile(self.dki2fs_coeff):
+            fsl.ConvertWarp(warp1=self.fs2dki_coeff,
+                            reference=self.dki_nodif,
+                            postmat=self.fs2dki_mat,
+                            out_file=self.dki2fs_coeff)
+
+        self.mni2dti_mat = join(self.regDir, 'mni2dti.mat')
+        if not isfile(self.mni2dti_mat):
+            fsl.FLIRT(bins=256, 
+                      cost_func='mutualinfo', 
+                      searchrx=[-180, 180],
+                      searchry=[-180, 180],
+                      searchrz=[-180, 180],
+                      dof=9,
+                      interp='trilinear',
+                      in_file=self.mni_brain,
+                      reference=self.dti_nodif_brain,
+                      out_matrix_file=self.mni2dti_mat).run()
+        self.mni2dki_mat = join(self.regDir, 'mni2dki.mat')
+        if not isfile(self.mni2dki_mat):
+            fsl.FLIRT(bins=256, 
+                      cost_func='mutualinfo', 
+                      searchrx=[-180, 180],
+                      searchry=[-180, 180],
+                      searchrz=[-180, 180],
+                      dof=9,
+                      interp='trilinear',
+                      in_file=self.mni_brain,
+                      reference=self.dki_nodif_brain,
+                      out_matrix_file=self.mni2dki_mat).run()
+
+        self.mni2dti_coeff = join(self.regDir, 'mni2dti_coeff.nii.gz')
+        if not isfile(self.mni2dti_coeff):
+            fsl.FNIRT(in_file=self.mni, 
+                      ref_file=self.dti_nodif,
+                      affine_file=self.mni2dti_mat, 
+                      inmask_file=self.mni_brain_mask, 
+                      config_file='T1_2_MNI152_2mm',
+                      refmask_file=self.dti_nodif_brain_mask, 
+                      fieldcoeff_file=self.mni2dti_coeff).run()
+        self.mni2dki_coeff = join(self.regDir, 'mni2dki_coeff.nii.gz')
+        if not isfile(self.mni2dki_coeff):
+            fsl.FNIRT(in_file=self.mni, 
+                      ref_file=self.dki_nodif,
+                      affine_file=self.mni2dki_mat, 
+                      inmask_file=self.mni_brain_mask, 
+                      config_file='T1_2_MNI152_2mm',
+                      refmask_file=self.dki_nodif_brain_mask, 
+                      fieldcoeff_file=self.mni2dki_coeff).run()
+
+        self.dti2mni_coeff = join(self.regDir, 'dti2mni_coeff.nii.gz')
+        if not isfile(self.dti2mni_coeff):
+            fsl.ConvertWarp(warp1=self.mni2dti_coeff,
+                            reference=self.dti_nodif,
+                            postmat=self.mni2dti_mat,
+                            out_file=self.dti2mni_coeff)
+
+        self.dki2mni_coeff = join(self.regDir, 'dki2mni_coeff.nii.gz')
+        if not isfile(self.dki2mni_coeff):
+            fsl.ConvertWarp(warp1=self.mni2dki_coeff,
+                            reference=self.dki_nodif,
+                            postmat=self.mni2dki_mat,
+                            out_file=self.dki2mni_coeff)
 
 def flirt_within_subject(img, ref, omat):
     flt = fsl.FLIRT(bins=256, 
@@ -52,67 +241,6 @@ def fnirt(img, ref, aff, out, inmask, refmask, mni=False):
         frt.inputs.config_file='T1_2_MNI152_2mm'
 
     frt.run()
-
-def preprocessing(subjDir):
-    raw_t1_location = join(subjDir, 'T1', 'T1.nii.gz')
-    run_reconall(subjDir, raw_t1_location)
-    
-    mgz_imgs_to_convert = ['brain', 'T1', 'brainmask']
-    mgz_imgs_loc = [join(subjDir, 'FREESURFER', 'mri', x+'.mgz') for x in mgz_imgs_to_convert]
-    for mgz_img in mgz_imgs_loc:
-        if 'mask' in mgz_img:
-            mgz_to_nifti(mgz_img, Mask=True)
-        else:
-            mgz_to_nifti(mgz_img)
-
-
-    regDir = join(subjDir, 'registration')
-    if not isdir(regDir):
-        os.mkdir(regDir)
-
-    # DTI / DKI flirt
-    fsDir = join(subjDir, 'FREESURFER', 'mri')
-    fs_t1 = join(fsDir, 'T1.nii.gz')
-    fs_t1_mask = join(fsDir, 'brainmask.nii.gz')
-    dtiDir = join(subjDir, 'DTI')
-    dkiDir = join(subjDir, 'DKI')
-    dti_nodif_brain = join(dtiDir, 'nodif_brain.nii.gz')
-    dki_nodif_brain = join(dkiDir, 'nodif_brain.nii.gz')
-
-    fs2dti=join(regDir, 'fs2dti.mat')
-    fs2dki=join(regDir, 'fs2dki.mat')
-
-    flirt_within_subject(dti_nodif_brain, fs_t1, fs2dti)
-    flirt_within_subject(dki_nodif_brain, fs_t1, fs2dki)
-
-    fs2dti_fnirt=join(regDir, 'fs2dti_coeff.nii.gz')
-    fs2dki_fnirt=join(regDir, 'fs2dki_coeff.nii.gz')
-    fnirt(dti_nodif_brain, fs_t1, fs2dti, d
-
-
-    fs2dki_fnirt_inv=join(regDir, 'fs2dki_coeff_inv.nii.gz')
-
-    
-
-    
-def fnirt(img, ref, aff, out, inmask, refmask, mni=False):
-    invwarp = InvWarp(warp=fnirt_out, 
-                      reference=ref,
-                     inverse_warp=out)
-    invwarp.run()
-
-
-    convwarp = ConvertWarp(warp1=inv_out,
-                           reference=ref,
-                           postmat=postmat,
-                           out_file=out)
-    convwarp.run()
-
-    applywarp = ApplyWarp(in_file=in_img,
-                          ref_file=ref,
-                          field_file=warp,
-                          out_file=out)
-    applywarp.run()
 
 for subj in $@
 do
