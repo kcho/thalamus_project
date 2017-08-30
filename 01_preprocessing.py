@@ -79,34 +79,46 @@ class subject:
                     out_file = self.nodif_brain).run()
     def fs_to_dti_flirt(self):
         if not isfile(self.fs2dti_mat):
-            flirt_within_subject(self.dti_nodif_brain, 
-                                 self.fs_t1_brain, 
-                                 self.fs2dti_mat)
+            fsl.FLIRT(bins=256, 
+                      cost_func='mutualinfo',
+                      searchrx=[-180, 180],
+                      searchry=[-180, 180],
+                      searchrz=[-180, 180],
+                      dof=6,
+                      interp='trilinear',
+                      in_file=self.fs_t1_brain,
+                      reference=self.dti_nodif_brain,
+                      out_matrix_file=self.fs2dti_mat).run()
 
     def fs_to_dki_flirt(self):
         if not isfile(self.fs2dki_mat):
-            flirt_within_subject(self.dki_nodif_brain, 
-                                 self.fs_t1_brain, 
-                                 self.fs2dki_mat)
+            fsl.FLIRT(bins=256, 
+                      cost_func='mutualinfo',
+                      searchrx=[-180, 180],
+                      searchry=[-180, 180],
+                      searchrz=[-180, 180],
+                      dof=6,
+                      interp='trilinear',
+                      in_file=self.fs_t1_brain,
+                      reference=self.dki_nodif_brain,
+                      out_matrix_file=self.fs2dki_mat).run()
     def fs_to_dti_fnirt(self):
         if not isfile(self.fs2dti_coeff):
-            fnirt(self.fs_t1,
-                  self.dti_nodif, 
-                  self.fs2dti_mat, 
-                  self.fs2dti_coeff,
-                  self.fs_t1_brain_mask,
-                  self.dti_nodif_brain_mask,
-                  mni=False)
+            fsl.FNIRT(in_file=self.fs_t1,
+                      ref_file=self.dti_nodif,
+                      affine_file=self.fs2dti_mat, 
+                      inmask_file=self.fs_t1_brain_mask, 
+                      refmask_file=self.dti_nodif_brain_mask,
+                      fieldcoeff_file=self.fs2dti_coeff).run()
 
     def fs_to_dki_fnirt(self):
         if not isfile(self.fs2dki_coeff):
-            fnirt(self.fs_t1,
-                  self.dki_nodif, 
-                  self.fs2dki_mat, 
-                  self.fs2dki_coeff,
-                  self.fs_t1_brain_mask,
-                  self.dki_nodif_brain_mask,
-                  mni=False)
+            fsl.FNIRT(in_file=self.fs_t1,
+                      ref_file=self.dki_nodif,
+                      affine_file=self.fs2dki_mat, 
+                      inmask_file=self.fs_t1_brain_mask, 
+                      refmask_file=self.dki_nodif_brain_mask,
+                      fieldcoeff_file=self.fs2dki_coeff).run()
 
     def fs_to_dti_fnirt(self):
         if not isfile(self.dti2fs_coeff):
@@ -279,20 +291,6 @@ class subject:
         self.dti_nodif2mni_check = join(self.regDir,
                                     'nodif2mni_check.nii.gz')
 
-
-def flirt_within_subject(img, ref, omat):
-    flt = fsl.FLIRT(bins=256, 
-                    cost_func='mutualinfo',
-                    searchrx=[-180, 180],
-                    searchry=[-180, 180],
-                    searchrz=[-180, 180],
-                    dof=6,
-                    interp='trilinear',
-                    in_file=img,
-                    reference=ref,
-                    out_matrix_file=omat)
-    flt.run()
-    
 def fnirt(img, ref, aff, out, inmask, refmask, mni=False):
     frt = fsl.FNIRT(in_file=img,
                     ref_file=ref,
