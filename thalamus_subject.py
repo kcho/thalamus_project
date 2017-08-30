@@ -30,11 +30,18 @@ class thalamus_subject:
     '''
 
     def __init__(self, subjDir):
-        fsldir = os.environ['FSLDIR']
-        fslstandard = join(fsldir, 'data', 'standard')
-        self.mni = join(fslstandard, 'MNI152_T1_2mm.nii.gz')
-        self.mni_brain = join(fslstandard, 'MNI152_T1_2mm_brain.nii.gz')
-        self.mni_brain_mask = join(fslstandard, 'MNI152_T1_2mm_brain_mask.nii.gz')
+        self.fsldir = os.environ['FSLDIR']
+        self.atlasdir = join(self.fsldir, 'data', 'atlases')
+        self.fslstandard = join(self.fsldir, 'data', 'standard')
+        self.mni_thalamus_left = 'lh_thal.nii.gz'
+        self.mni_thalamus_right = 'rh_thal.nii.gz'
+        self.HO_template = join(self.atlasdir,
+                        'HarvardOxford',
+                        'HarvardOxford-sub-prob-2mm.nii.gz')
+
+        self.mni = join(self.fslstandard, 'MNI152_T1_2mm.nii.gz')
+        self.mni_brain = join(self.fslstandard, 'MNI152_T1_2mm_brain.nii.gz')
+        self.mni_brain_mask = join(self.fslstandard, 'MNI152_T1_2mm_brain_mask.nii.gz')
 
         self.dir = subjDir
         self.t1Dir = join(subjDir, 'T1')
@@ -87,7 +94,11 @@ class thalamus_subject:
         self.dti_nodif2mni_check = join(self.regDir, 
                                         'dti_nodif2mni_check.nii.gz')
 
+        self.bedpostxDir = join(subjDir, 
+                                'DTI.bedpostX')
 
 
-        self.bedpostxDir = join(subjDir, 'DTI.bedpostX')
+        self.tractDir = join(subjDir, 'tractography')
+        self.tractDir_left = join(self.tractDir, 'left')
+        self.tractDir_right = join(self.tractDir, 'right')
 
