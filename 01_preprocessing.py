@@ -7,6 +7,71 @@ from nipype.interfaces.freesurfer import ReconAll, MRIConvert
 import sys
 
 class subject:
+    '''
+    f = subject('/subjectdir')
+
+    subjectdir requires below structures
+
+    subjectdir
+      ├─ DTI
+      │   ├─ 20*.nii.gz : raw dwi
+      │   ├─ 20*.bvec : raw bvectors
+      │   └─ 20*.bval : raw bvalues
+      │ 
+      ├─ T1
+      │   └─ 20*.nii.gz : raw T1
+      │
+      └─ DKI (optional)
+          ├─ 20*.nii.gz : raw dwi
+          ├─ 20*.bvec : raw bvectors
+          └─ 20*.bval : raw bvalues
+    
+    eg)
+    f = subject(sys.argv[1])
+    f.run_recon_all()
+    f.convert_mgzs_into_niftis()
+    f.dti_preproc()
+    f.fs_to_dti_flirt()
+
+    f.mni_to_fs_flirt()
+    f.mni_to_fs_fnirt()
+
+    f.mni_to_fs_to_dti_convwarp()
+    f.dti_to_fs_to_mni_from_invwarp()
+    f.visual_check_nodif_to_mni()
+    
+    
+    Example output)
+    subjectdir
+      ├─ DTI
+      │   ├─ 20*.nii.gz : raw dwi
+      │   ├─ 20*.bvec : raw bvectors
+      │   └─ 20*.bval : raw bvalues
+      │ 
+      ├─ T1
+      │   └─ 20*.nii.gz : raw T1
+      │
+      ├─ DKI (optional)
+      │   ├─ 20*.nii.gz : raw dwi
+      │   ├─ 20*.bvec : raw bvectors
+      │   └─ 20*.bval : raw bvalues
+      │
+      ├─ FREESURFER (optional)
+      │   ├─ ...
+      │   └─ mri
+      │       ├─ T1.nii.gz : T1 image
+      │       ├─ brain.nii.gz : T1_brain image
+      │       └─ brainmask.nii.gz : T1_brain mask image
+      │
+      └─ registration
+          ├─ fs2dti.mat : freesurfer to dti flirt
+          ├─ mni2fs.mat : MNI to freesurfer flirt
+          ├─ mni2fs_coeff.nii.gz : MNI to freesurfer fnirt
+          ├─ mni2fs2dti_coeff.nii.gz : MNI to freesurfer to DTI fnirt
+          ├─ dti2fs2mni_coeff.nii.gz : DTI to freesurfer to MNI frnit
+          └─ nodif2mni_check.nii.gz : DTI image registered on MNI
+    '''
+
     def get_img_raw(self, t1Dir):
         file_list = os.listdir(t1Dir)
         co_list = [x for x in file_list if re.search('^20.*\.nii\.gz$', x)]
@@ -23,27 +88,22 @@ class subject:
                      T1_files = self.t1raw).run()
 
     def convert_mgzs_into_niftis(self):
-        if not isfile(self.fs_t1):
-            MRIConvert(in_file=self.fs_t1_mgz,
-                       out_file=self.fs_t1,
-                       out_type='nii.gz',
-                       out_orientation='RAS').run()
-
-        if not isfile(self.fs_t1_brain):
-            MRIConvert(in_file=self.fs_t1_brain_mgz,
-                       out_file=self.fs_t1_brain,
-                       out_type='nii.gz',
-                       out_orientation='RAS').run()
-
-        if not isfile(self.fs_t1_brain_mask):
-            MRIConvert(in_file=self.fs_t1_brain_mask_mgz,
-                                  out_file=self.fs_t1_brain_mask,
-                                  out_type='nii.gz',
-                                  out_orientation='RAS').run()
-            command = 'fslmaths {imgInput} -bin {imgOutput}'.format(
-                imgInput = self.fs_t1_brain_mask,
-                imgOutput = self.fs_t1_brain_mask)
-            os.popen(command).read()
+        for img_mgz, img_nifti in zip([self.fs_t1_mgz,
+                                       self.fs_t1_brain_mgz,
+                                       self.fs_t1_brain_mask_mgz],
+                                      [self.fs_t1,
+                                       self.fs_t1_brain,
+                                       self.fs_t1_brain_mask]):
+            if not isfile(img_nifti):
+                MRIConvert(in_file=img_mgz,
+                           out_file=img_nifti,
+                           out_type='niigz',
+                           out_orientation='RAS').run()
+            if 'mask' in img_nifti:
+                command = 'fslmaths {imgInput} -bin {imgOutput}'.format(
+                    imgInput = img_nifti,
+                    imgOutput = img_nifti)
+                os.popen(command).read()
 
     def dti_preproc(self):
         if not isfile(self.dti_eddy_out):
@@ -56,7 +116,7 @@ class subject:
                            t_size=1,
                            roi_file=self.dti_nodif).run()
 
-        if not isfile(self.nodif_brain):
+        if not isfile(self.dti_nodif_brain):
             fsl.Bet(in_file = self.nodif,
                     frac = 0.3,
                     mask = True,
@@ -81,9 +141,9 @@ class subject:
         if not isfile(self.fs2dti_mat):
             fsl.FLIRT(bins=256, 
                       cost_func='mutualinfo',
-                      searchrx=[-180, 180],
-                      searchry=[-180, 180],
-                      searchrz=[-180, 180],
+                      searchr_x=[-180, 180],
+                      searchr_y=[-180, 180],
+                      searchr_z=[-180, 180],
                       dof=6,
                       interp='trilinear',
                       in_file=self.fs_t1_brain,
@@ -94,9 +154,9 @@ class subject:
         if not isfile(self.fs2dki_mat):
             fsl.FLIRT(bins=256, 
                       cost_func='mutualinfo',
-                      searchrx=[-180, 180],
-                      searchry=[-180, 180],
-                      searchrz=[-180, 180],
+                      searchr_x=[-180, 180],
+                      searchr_y=[-180, 180],
+                      searchr_z=[-180, 180],
                       dof=6,
                       interp='trilinear',
                       in_file=self.fs_t1_brain,
@@ -137,9 +197,9 @@ class subject:
     def mni_to_fs_flirt(self):
         if not isfile(self.mni2fs_mat):
             fsl.FLIRT(bins=256, cost_func='mutualinfo',
-                      searchrx=[-180, 180],
-                      searchry=[-180, 180],
-                      searchrz=[-180, 180], dof=12,
+                      searchr_x=[-180, 180],
+                      searchr_y=[-180, 180],
+                      searchr_z=[-180, 180], dof=12,
                       interp='trilinear',
                       in_file=self.mni_brain,
                       reference=self.fs_t1_brain,
@@ -212,7 +272,6 @@ class subject:
         self.dki_nodif = join(self.dkiDir, 'nodif.nii.gz')
         self.dki_nodif_brain = join(self.dkiDir, 'nodif_brain.nii.gz')
         self.dki_nodif_brain_mask = join(self.dkiDir, 'nodif_brain_mask.nii.gz')
-
 
         self.regDir = join(subjDir, 'registration')
         if not isdir(self.regDir):
