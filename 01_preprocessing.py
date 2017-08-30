@@ -1,31 +1,10 @@
-import os
-from os.path import join, isfile, isdir
-from glob import glob
-import re
-from nipype.interfaces import fsl
-from nipype.interfaces.freesurfer import ReconAll, MRIConvert
+# -*- coding: utf-8 -*-
 import sys
+from thalamus_subject import *
 
-class subject:
+class thalamus_subject(thalamus_subject):
     '''
-    f = subject('/subjectdir')
-
-    subjectdir requires below structures
-
-    subjectdir
-      ├─ DTI
-      │   ├─ 20*.nii.gz : raw dwi
-      │   ├─ 20*.bvec : raw bvectors
-      │   └─ 20*.bval : raw bvalues
-      │ 
-      ├─ T1
-      │   └─ 20*.nii.gz : raw T1
-      │
-      └─ DKI (optional)
-          ├─ 20*.nii.gz : raw dwi
-          ├─ 20*.bvec : raw bvectors
-          └─ 20*.bval : raw bvalues
-    
+    based on thalamus_subject class in thalamus_subject.py
     eg)
     f = subject(sys.argv[1])
     f.run_recon_all()
@@ -70,8 +49,8 @@ class subject:
           ├─ mni2fs2dti_coeff.nii.gz : MNI to freesurfer to DTI fnirt
           ├─ dti2fs2mni_coeff.nii.gz : DTI to freesurfer to MNI frnit
           └─ nodif2mni_check.nii.gz : DTI image registered on MNI
-    '''
 
+    '''
     def get_img_raw(self, t1Dir):
         file_list = os.listdir(t1Dir)
         co_list = [x for x in file_list if re.search('^20.*\.nii\.gz$', x)]
@@ -229,73 +208,16 @@ class subject:
                         inverse_warp=self.dti2fs2mni).run()
 
     def visual_check_nodif_to_mni(self):
-        if not isfile(self.nodif2mni_check):
+        if not isfile(self.dti_nodif2mni_check):
             fsl.ApplyWarp(in_file=self.dti_nodif,
                           ref_file=self.mni,
                           out_file=self.dti_nodif2mni_check,
                           field_file=self.dti2fs2mni).run()
 
-    def __init__(self, subjDir):
-        fsldir = os.environ['FSLDIR']
-        fslstandard = join(fsldir, 'data', 'standard')
-        self.mni = join(fslstandard, 'MNI152_T1_2mm.nii.gz')
-        self.mni_brain = join(fslstandard, 'MNI152_T1_2mm_brain.nii.gz')
-        self.mni_brain_mask = join(fslstandard, 'MNI152_T1_2mm_brain_mask.nii.gz')
-
-        self.dir = subjDir
-        self.t1Dir = join(subjDir, 'T1')
-        self.t1raw = self.get_img_raw(self.t1Dir)
-        self.fsDir = join(subjDir, 'FREESURFER')
-
-        self.fsMriDir = join(self.fsDir, 'mri')
-        self.fs_t1_mgz = join(self.fsMriDir, 'T1.mgz')
-        self.fs_t1 = join(self.fsMriDir, 'T1.nii.gz')
-
-        self.fs_t1_brain_mgz = join(self.fsMriDir, 'brain.mgz')
-        self.fs_t1_brain = join(self.fsMriDir, 'brain.nii.gz')
-
-        self.fs_t1_brain_mask_mgz = join(self.fsMriDir, 'brainmask.mgz')
-        self.fs_t1_brain_mask = join(self.fsMriDir, 'brainmask.nii.gz')
-        self.dtiDir = join(subjDir, 'DTI')
-        self.nodif_number = 0
-        self.dtiraw = self.get_img_raw(self.dtiDir)
-        self.dti_eddy_out = join(self.dtiDir, 'data.nii.gz')
-        self.dti_nodif = join(self.dtiDir, 'nodif.nii.gz')
-        self.dti_nodif_brain = join(self.dtiDir, 'nodif_brain.nii.gz')
-        self.dti_nodif_brain_mask = join(self.dtiDir, 'nodif_brain_mask.nii.gz')
-
-
-        self.dkiDir = join(subjDir, 'DKI')
-        self.nodif_number = 0
-        self.dkiraw = self.get_img_raw(self.dkiDir)
-        self.dki_eddy_out = join(self.dkiDir, 'data.nii.gz')
-        self.dki_nodif = join(self.dkiDir, 'nodif.nii.gz')
-        self.dki_nodif_brain = join(self.dkiDir, 'nodif_brain.nii.gz')
-        self.dki_nodif_brain_mask = join(self.dkiDir, 'nodif_brain_mask.nii.gz')
-
-        self.regDir = join(subjDir, 'registration')
-        if not isdir(self.regDir):
-            os.mkdir(self.regDir)
-
-        self.fs2dti_mat = join(self.regDir, 'fs2dti.mat')
-        self.fs2dki_mat = join(self.regDir, 'fs2dki.mat')
-
-        self.fs2dti_coeff = join(self.regDir, 'fs2dti_coeff.nii.gz')
-        self.fs2dki_coeff = join(self.regDir, 'fs2dki_coeff.nii.gz')
-        self.dti2fs_coeff = join(self.regDir, 'dti2fs_coeff.nii.gz')
-        self.dki2fs_coeff = join(self.regDir, 'dki2fs_coeff.nii.gz')
-
-        self.mni2fs_mat = join(self.regDir, 'mni2fs.mat')
-        self.mni2fs_coeff = join(self.regDir, 'mni2fs_coeff.nii.gz')
-        self.mni2fs2dti = join(self.regDir, 'mni2fs2dti_coeff.nii.gz')
-        self.dti2fs2mni = join(self.regDir, 'dti2fs2mni_coeff.nii.gz')
-
-        self.dti_nodif2mni_check = join(self.regDir, 
-                                        'nodif2mni_check.nii.gz')
 
 if __name__ == '__main__':
     print(sys.argv[1])
-    f = subject(sys.argv[1])
+    f = thalamus_subject(sys.argv[1])
     f.run_recon_all()
     f.convert_mgzs_into_niftis()
     f.dti_preproc()
