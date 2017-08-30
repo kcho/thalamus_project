@@ -102,3 +102,19 @@ class thalamus_subject:
         self.tractDir_left = join(self.tractDir, 'left')
         self.tractDir_right = join(self.tractDir, 'right')
 
+        self.left_tract_recon = join(self.tractDir_left,
+                                     'fdt_matrix2_reconstructed.nii.gz')
+        self.left_tract_recon_mni = join(self.tractDir_left,
+                                         'fdt_matrix2_reconstructed_MNI.nii.gz')
+        self.left_tract_recon_mni_ds = join(self.tractDir_left,
+                                            'fdt_matrix2_reconstructed_MNI_ds.nii.gz')
+        self.right_tract_recon = join(self.tractDir_right,
+                                     'fdt_matrix2_reconstructed.nii.gz')
+        self.right_tract_recon_mni = join(self.tractDir_right,
+                                         'fdt_matrix2_reconstructed_MNI.nii.gz')
+        self.right_tract_recon_mni_ds = join(self.tractDir_right,
+                                            'fdt_matrix2_reconstructed_MNI_ds.nii.gz')
+
+
+
+
