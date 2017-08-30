@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
 from thalamus_subject import *
+from roiExtraction import *
 
 class thalamus_subject(thalamus_subject):
     '''
