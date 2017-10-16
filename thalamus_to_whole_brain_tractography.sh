@@ -8,6 +8,12 @@ Usage() {
 
 [ "$1" = "" ] && Usage
 
+################################
+# Input from commandline
+################################
+subj=${1}
+side_s=${2}
+
 if [ ${side_s} == 'lh' ]
 then
     side=left
@@ -21,11 +27,6 @@ fi
 echo ${subj} ${side}
 
 # Edit here for different folder structure
-################################
-# Input from commandline
-################################
-subj=${1}
-side_s=${2}
 
 fsDir=${subj}/FREESURFER
 regDir=${subj}/registration
