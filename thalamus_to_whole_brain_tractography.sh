@@ -8,17 +8,6 @@ Usage() {
 
 [ "$1" = "" ] && Usage
 
-# edit here for different folder structure
-subj=${1}
-side_s=${2}
-fsDir=${subj}/FREESURFER
-regDir=${subj}/registration
-dtiDir=${subj}/DTI
-roiDir=${subj}/ROI
-tractDir=${subj}/thalamus_tractography
-tractDir_MNI=${subj}/thalamus_tractography_MNI
-bedpostDir=${subj}/DTI.bedpostX
-
 if [ ${side_s} == 'lh' ]
 then
     side=left
@@ -31,23 +20,115 @@ fi
 
 echo ${subj} ${side}
 
-#Segmentation
-if [ ! -d ${tractDir} ]
+# Edit here for different folder structure
+################################
+# Input from commandline
+################################
+subj=${1}
+side_s=${2}
+
+fsDir=${subj}/FREESURFER
+regDir=${subj}/registration
+dtiDir=${subj}/DTI
+roiDir=${subj}/ROI
+tractDir=${subj}/thalamus_tractography
+tractDir_MNI=${subj}/wb_thalamus_tractography
+bedpostDir=${subj}/DTI.bedpostX
+
+rawT1=${fsDir}/mri/brain.nii.gz
+rawT1_mask=${fsDir}/mri/brainmask.nii.gz
+rawT1_mask_mgz=${fsDir}/mri/brainmask.mgz
+nodif_brain=${dtiDir}/nodif_brain.nii.gz
+
+sourceImg=${rawT1}
+mni=${fsldir}/data/standard/MNI152_T1_2mm_brain.nii.gz
+mniMask=${fsldir}/data/standard/MNI152_T1_2mm_brain_mask.nii.gz
+
+################################################################
+# 0. nifti from freesurfer
+################################################################
+if [ ! -e ${rawT1_mask} ]
 then
-    mkdir ${tractDir}
-else
-    if [ ! -d ${tractDir}/${side} ]
-    then
-        mkdir ${tractDir}/${side}
-    fi
+    mri_convert --out_orientation RAS \
+        ${rawT1_mask_mgz} \
+        ${rawT1_mask}
+    fslmaths ${rawT1_mask} -bin ${rawT1_mask}
 fi
 
-# Freesurfer ROI registration 
-# fsThalROI=${roiDir}/${side_s}_thalamus.nii.gz 
-# dtiThalROI=${roiDir}/${side_s}_thalamus_DTI.nii.gz 
+################################################################
+# 1.1 Registration : fs --> mni fnirt
+################################################################
+fs2mni_flirt=${regDir}/fs2mni.mat
+#flirt & fnirt
+if [ ! -e ${fs2mni_flirt} ]
+then
+    flirt -in ${sourceImg} \
+        -ref ${mni} \
+        -omat ${fs2mni_flirt}
+fi
+
+fs2mni_fnirt=${regDir}/fs2mni_fnirt_coeff.nii.gz
+fs2mni_fnirt_img=${regDir}/fs2mni_fnirt_img.nii.gz
+if [ ! -e ${fs2mni_fnirt} ]
+then
+    fnirt \
+        --in=${sourceImg} \
+        --ref=${mni} \
+        --aff=${fs2mni_flirt} \
+        --inmask=${rawT1_mask} \
+        --refmask=${mniMask} \
+        --cout=${fs2mni_fnirt} \
+        --iout=${fs2mni_fnirt_img} 
+fi
+
+mni2fs_fnirt=${regDir}/mni2fs_fnirt_coeff.nii.gz
+if [ ! -e ${mni2fs_fnirt} ]
+then
+    invwarp \
+        -w ${fs2mni_fnirt} \
+        -o ${mni2fs_fnirt} \
+        -r ${rawT1}
+fi
+
+################################################################
+# 1.2 Registration : fs --> DTI flirt
+################################################################
+fs2nodif=${regDir}/fs2nodif.mat
+if [ ! -e ${fs2nodif} ]
+then
+    flirt \
+        -in ${rawT1} \
+        -ref ${nodif_brain} \
+        -omat ${fs2nodif}
+fi
+
+################################################################
+# 1.3 Registration : MNI --> fs --> DTI 
+################################################################
+mni2fs2nodif=${regDir}/mni2fs2nodif_coeff.nii.gz
+if [ ! -e ${mni2fs2nodif} ]
+then
+    convertwarp \
+        --ref=${mniThalROI} \
+        --warp1=${mni2fs_fnirt} \
+        --postmat=${fs2nodif}
+fi
+
+nodif2fs2mni=${regDir}/nodif2fs2mni_coeff.nii.gz
+if [ ! -e ${nodif2fs2mni} ]
+then
+    invwarp \
+        -w ${mni2fs2nodif} \
+        -o ${nodif2fs2mni} \
+        -r ${mniThalROI_raw}
+fi
+
+
+################################################################
+# 2. Extract thalamic ROI from the Harvard Oxford template
+################################################################
 mniThalROI_raw=${side_s}_thalamus_HOSC_60.nii.gz
 mniThalROI=${roiDir}/${side_s}_thalamus_DTI_HO.nii.gz 
-
 if [ ! -e ${mniThalROI_raw} ]
 then
     fslroi ${FSLDIR}/data/atlases/HarvardOxford/HarvardOxford-sub-prob-2mm.nii.gz lh_thalamus_HOSC.nii.gz 3 1
@@ -59,17 +140,17 @@ fi
 
 if [ ! -e ${mniThalROI} ]
 then 
-    flirt \
-        -in ${mniThalROI_raw} \
-        -ref ${bedpostDir}/nodif_brain_mask.nii.gz \
-        -applyxfm -init ${regDir}/MNItoNodif.mat \
-        -interp nearestneighbour \
-        -out ${mniThalROI}
+    applywarp \
+        --ref=${nodif_brain} \
+        --in=${mniThalROI_raw} \
+        --warp=${mni2fs2nodif} \
+        --out=${mniThalROI} \
+        --interp=nn
 fi
 
-# Tractography using fnirt
-mni2fs2nodif=${regDir}/MNI_to_FREESURFER_fnirt_to_Nodif_flirt.nii.gz
-nodif2fs2mni=${regDir}/Nodif_to_FREESURFER_flirt_to_MNI_fnirt.nii.gz
+################################################################
+# 3. Thalamus seeded whole-brain tractography
+################################################################
 if [ ! -e ${tractDir_MNI}/${side}/fdt_paths.nii.gz ]
 then
     rm -rf ${tractDir_MNI}/${side} 
@@ -79,7 +160,7 @@ then
         -l \
         --onewaycondition \
         --omatrix2 \
-        --target2=${FSLDIR}/data/standard/MNI152_T1_2mm_brain_mask.nii.gz \
+        --target2=${mniMask} \
         -c 0.2 \
         -S 2000 \
         --steplength=0.5 \
