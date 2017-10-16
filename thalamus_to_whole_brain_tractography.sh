@@ -41,16 +41,17 @@ rawT1_mask=${fsDir}/mri/brainmask.nii.gz
 rawT1_mask_mgz=${fsDir}/mri/brainmask.mgz
 nodif_brain=${dtiDir}/nodif_brain.nii.gz
 
-sourceImg=${rawT1}
-mni=${fsldir}/data/standard/MNI152_T1_2mm_brain.nii.gz
-mniMask=${fsldir}/data/standard/MNI152_T1_2mm_brain_mask.nii.gz
+#sourceImg=${rawT1}
+mni=${FSLDIR}/data/standard/MNI152_T1_2mm_brain.nii.gz
+mniMask=${FSLDIR}/data/standard/MNI152_T1_2mm_brain_mask.nii.gz
 
 ################################################################
 # 0. nifti from freesurfer
 ################################################################
 if [ ! -e ${rawT1_mask} ]
 then
-    mri_convert --out_orientation RAS \
+    mri_convert \
+        --out_orientation RAS \
         ${rawT1_mask_mgz} \
         ${rawT1_mask}
     fslmaths ${rawT1_mask} -bin ${rawT1_mask}
@@ -63,7 +64,8 @@ fs2mni_flirt=${regDir}/fs2mni.mat
 #flirt & fnirt
 if [ ! -e ${fs2mni_flirt} ]
 then
-    flirt -in ${sourceImg} \
+    flirt \
+        -in ${rawT1} \
         -ref ${mni} \
         -omat ${fs2mni_flirt}
 fi
@@ -73,7 +75,7 @@ fs2mni_fnirt_img=${regDir}/fs2mni_fnirt_img.nii.gz
 if [ ! -e ${fs2mni_fnirt} ]
 then
     fnirt \
-        --in=${sourceImg} \
+        --in=${rawT1} \
         --ref=${mni} \
         --aff=${fs2mni_flirt} \
         --inmask=${rawT1_mask} \
