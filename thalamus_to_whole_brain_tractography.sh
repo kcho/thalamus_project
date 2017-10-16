@@ -133,7 +133,7 @@ fi
 # 2. Extract thalamic ROI from the Harvard Oxford template
 ################################################################
 mniThalROI_raw=${side_s}_thalamus_HOSC_60.nii.gz
-mniThalROI=${roiDir}/${side_s}_thalamus_DTI_HO.nii.gz 
+#mniThalROI=${roiDir}/${side_s}_thalamus_DTI_HO.nii.gz 
 if [ ! -e ${mniThalROI_raw} ]
 then
     fslroi ${FSLDIR}/data/atlases/HarvardOxford/HarvardOxford-sub-prob-2mm.nii.gz lh_thalamus_HOSC.nii.gz 3 1
@@ -143,15 +143,15 @@ then
     fslmaths rh_thalalmus_HOSC.nii.gz -thr 60 -bin rh_thalamus_HOSC_60.nii.gz
 fi
 
-if [ ! -e ${mniThalROI} ]
-then 
-    applywarp \
-        --ref=${nodif_brain} \
-        --in=${mniThalROI_raw} \
-        --warp=${mni2fs2nodif} \
-        --out=${mniThalROI} \
-        --interp=nn
-fi
+#if [ ! -e ${mniThalROI} ]
+#then 
+    #applywarp \
+        #--ref=${nodif_brain} \
+        #--in=${mniThalROI_raw} \
+        #--warp=${mni2fs2nodif} \
+        #--out=${mniThalROI} \
+        #--interp=nn
+#fi
 
 ################################################################
 # 3. Thalamus seeded whole-brain tractography
