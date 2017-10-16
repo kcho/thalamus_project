@@ -112,9 +112,11 @@ mni2fs2nodif=${regDir}/mni2fs2nodif_coeff.nii.gz
 if [ ! -e ${mni2fs2nodif} ]
 then
     convertwarp \
-        --ref=${mniThalROI} \
+        --ref=${nodif_brain} \
         --warp1=${mni2fs_fnirt} \
-        --postmat=${fs2nodif}
+        --postmat=${fs2nodif} \
+        --out=${mni2fs2nodif}
+
 fi
 
 nodif2fs2mni=${regDir}/nodif2fs2mni_coeff.nii.gz
@@ -123,7 +125,7 @@ then
     invwarp \
         -w ${mni2fs2nodif} \
         -o ${nodif2fs2mni} \
-        -r ${mniThalROI_raw}
+        -r ${mni}
 fi
 
 
@@ -183,6 +185,9 @@ else
     echo ${subj} MNI thalamo-whole brain tractography on the ${side} done
 fi
 
+################################################################
+# 4. Downsampling --> requires editing 
+################################################################
 reconImg=${tractDir_MNI}/${side}/fdt_matrix2_reconstructed.nii.gz
 reconImg_ds_3=${tractDir_MNI}/${side}/fdt_matrix2_reconstructed_ds_3.nii.gz
 reconImg_ds_4=${tractDir_MNI}/${side}/fdt_matrix2_reconstructed_ds_4.nii.gz
