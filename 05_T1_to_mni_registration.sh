@@ -5,7 +5,9 @@ do
     rawT1_mask=${i}/FREESURFER/mri/brainmask.nii.gz
     rawT1_mask_mgz=${i}/FREESURFER/mri/brainmask.mgz
     sourceImg=${rawT1}
+    sourceImg_nobet=${i}/FREESURFER/mri/brain.nii.gz
     targetImg=/usr/share/fsl/5.0/data/standard/MNI152_T1_1mm_brain.nii.gz
+    targetImg_nobet=/usr/share/fsl/5.0/data/standard/MNI152_T1_1mm.nii.gz
     targetImgMask=/usr/share/fsl/5.0/data/standard/MNI152_T1_1mm_brain_mask.nii.gz
 
     #make T1_brain.nii.gz
@@ -31,8 +33,8 @@ do
     if [ ! -e ${i}/registration/T1_to_MNI_fnirt_coeff.nii.gz ]
     then
         fnirt \
-            --in=${sourceImg} \
-            --ref=${targetImg} \
+            --in=${sourceImg_nobet} \
+            --ref=${targetImg_nobet} \
             --aff=${flirtMat} \
             --inmask=${rawT1_mask} \
             --refmask=${targetImgMask} \
