@@ -5,7 +5,7 @@ do
     rawT1_mask=${i}/FREESURFER/mri/brainmask.nii.gz
     rawT1_mask_mgz=${i}/FREESURFER/mri/brainmask.mgz
     sourceImg=${rawT1}
-    sourceImg_nobet=${i}/FREESURFER/mri/brain.nii.gz
+    sourceImg_nobet=${i}/FREESURFER/mri/T1.nii.gz
     targetImg=/usr/share/fsl/5.0/data/standard/MNI152_T1_1mm_brain.nii.gz
     targetImg_nobet=/usr/share/fsl/5.0/data/standard/MNI152_T1_1mm.nii.gz
     targetImgMask=/usr/share/fsl/5.0/data/standard/MNI152_T1_1mm_brain_mask.nii.gz
