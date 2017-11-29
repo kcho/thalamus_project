@@ -21,7 +21,7 @@ def freesurfer_check(subjects):
         df = pd.concat([df, df_subject])
     gb = df.groupby('fs')
     print gb.count()
-    print gb.get_group('not_completed').subject.unique()
+    #print gb.get_group('not_completed').subject.unique()
 
 def tractography_check(subjects):
     print '='*80
@@ -44,7 +44,7 @@ def tractography_check(subjects):
             df = pd.concat([df, df_subject])
     gb = df.groupby(['side', 'segmentation'])
     print gb.count().reset_index().pivot_table(index='segmentation', columns='side')
-    print df.groupby('segmentation').get_group('not_completed').subject.unique()
+    #print df.groupby('segmentation').get_group('not_completed').subject.unique()
 
 def roi_check(subjects):
     print '='*80
@@ -71,7 +71,7 @@ def roi_check(subjects):
 
     gb = df.groupby(['side', 'cortex', 'roi'])
     print gb.count().reset_index().pivot_table(index='roi', columns='cortex')
-    print df.groupby('roi').get_group('not_completed').subject.unique()
+    #print df.groupby('roi').get_group('not_completed').subject.unique()
 
 def reg_check(subjects):
     print '='*80
@@ -99,7 +99,7 @@ def reg_check(subjects):
             df = pd.concat([df, df_subject])
     gb = df.groupby(['regMats', 'registration'])
     print gb.count().reset_index().pivot_table(index='registration', columns='regMats')
-    print df.groupby('registration').get_group('not_completed').subject.unique()
+    #print df.groupby('registration').get_group('not_completed').subject.unique()
 
 if __name__=='__main__':
     subjects = [abspath(x) for x in os.listdir(os.getcwd()) \
