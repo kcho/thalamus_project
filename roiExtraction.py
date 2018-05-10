@@ -46,7 +46,7 @@ def roiExtraction(subject, roiName, fsName):
                      'MTC':[1006, 1016, 1007],
                      'LTC':[1034, 1030, 1001, 1009, 1015, 1033],
                      'OCC':[1021, 1013, 1011, 1005]}
-    for cortex, roiNums in cortexNumDict.iteritems():
+    for cortex, roiNums in cortexNumDict.items():
         for side in 'lh', 'rh':
             if side == 'lh':
                 newRoiNum = ' '.join([str(x) for x in roiNums])
@@ -93,7 +93,7 @@ to one or the other subgroup(layer)
                             ''')
     args = argparser.parse_args()
 
-    print args
+    print(args)
     roiExtraction(args.subject[0], args.roiName[0], args.fsName[0])
 
 #OFC
