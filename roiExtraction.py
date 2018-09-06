@@ -22,7 +22,7 @@ def roiExtraction(subject, roiName, fsName):
     # Change orientation to RAS
     aaLoc = join(fsDir, 'mri/aparc+aseg.mgz')
     oaaLoc = join(fsDir, 'mri/oaparc+aseg.mgz')
-    convert_to_ras(aaLoc, oaaLoc)
+    #convert_to_ras(aaLoc, oaaLoc)
 
     #to extract thalamus
     thalamusNumDict={'lh':10, 'rh':49}
@@ -30,7 +30,8 @@ def roiExtraction(subject, roiName, fsName):
         command = 'mri_binarize --i {oaaLoc} \
                 --match {thalamusNum} \
                 --o {roiDir}/{side}_thalamus.nii.gz'.format(
-                    oaaLoc = oaaLoc,
+                    #oaaLoc = oaaLoc,
+                    oaaLoc = aaLoc,
                     fsDir=fsDir,
                     thalamusNum=thalamusNumDict[side],
                     roiDir=roiDir,
@@ -56,7 +57,8 @@ def roiExtraction(subject, roiName, fsName):
             command = 'mri_binarize --i {oaaLoc} \
                             --match {numbers} \
                             --o {roiDir}/{side}_{cortex}.nii.gz'.format(
-                                    oaaLoc=oaaLoc,
+                                    #oaaLoc=oaaLoc,
+                                    oaaLoc=aaLoc,
                                     fsDir=fsDir,
                                     numbers=newRoiNum,
                                     roiDir=roiDir,
